@@ -18,10 +18,6 @@ class Hpl extends Model
         'no_sk_hpl',
         'tgl_hpl',
         'luas_sk',
-        'sisa_luas',
-        'no_sertifikat',
-        'peta',
-        'file_peta',
     ];
 
     public function kawasan()

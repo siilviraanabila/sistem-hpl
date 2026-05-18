@@ -24,141 +24,213 @@ class PimpinanController extends Controller
 {
     public function dashboard(Request $request)
     {
-        
+        // Ambil semua request dari filter
         $provinsiId = $request->provinsi;
+        $kabupaten  = $request->kabupaten;
+        $kawasan    = $request->kawasan;
+        $lokasi     = $request->lokasi;
+        $tahun      = $request->tahun;
+
         $provinsiList = Provinsi::orderBy('nama_provinsi')->get();
-
-        // Base Query SHM + filter provinsi lewat relasi
-        $baseQuery = Shm::with('kawasan.desa.kecamatan.kabupaten.provinsi');
-
-        if ($provinsiId) {
-            $baseQuery->whereHas('kawasan.desa.kecamatan.kabupaten.provinsi', function ($q) use ($provinsiId) {
-                $q->where('id', $provinsiId);
-            });
-        }
 
         /*
         |--------------------------------------------------------------------------
-        | PIE SHM (Target vs Realisasi vs Sisa)
+        | 1. FUNGSI FILTER GLOBAL
+        |--------------------------------------------------------------------------
+        | Closure ini akan dipakai untuk menempelkan filter wilayah ke tabel SHM, HPL, dan PL
+        */
+        $filterWilayah = function ($query) use ($provinsiId, $kabupaten, $kawasan, $lokasi) {
+            $query->when($provinsiId, function ($q) use ($provinsiId) {
+                $q->whereHas('kawasan.desa.kecamatan.kabupaten.provinsi', function ($q2) use ($provinsiId) {
+                    $q2->where('id', $provinsiId);
+                });
+            })
+            ->when($kabupaten, function ($q) use ($kabupaten) {
+                $q->whereHas('kawasan.desa.kecamatan.kabupaten', function ($q2) use ($kabupaten) {
+                    $q2->where('nama_kabupaten', 'like', '%' . $kabupaten . '%');
+                });
+            })
+            ->when($kawasan, function ($q) use ($kawasan) {
+                $q->whereHas('kawasan', function ($q2) use ($kawasan) {
+                    $q2->where('nama_kawasan', 'like', '%' . $kawasan . '%');
+                });
+            })
+            ->when($lokasi, function ($q) use ($lokasi) {
+                $q->whereHas('kawasan', function ($q2) use ($lokasi) {
+                    $q2->where('nama_lokasi', 'like', '%' . $lokasi . '%');
+                });
+            });
+        };
+
+        /*
+        |--------------------------------------------------------------------------
+        | 2. SUMMARY CARD WILAYAH (Berdasarkan Filter)
         |--------------------------------------------------------------------------
         */
+        $wilayahQuery = KawasanTransmigrasi::query()
+            ->join('desa', 'desa.id', '=', 'kawasan_transmigrasi.desa_id')
+            ->join('kecamatan', 'kecamatan.id', '=', 'desa.kecamatan_id')
+            ->join('kabupaten', 'kabupaten.id', '=', 'kecamatan.kabupaten_id')
+            ->join('provinsi', 'provinsi.id', '=', 'kabupaten.provinsi_id')
+            ->when($provinsiId, fn($q) => $q->where('provinsi.id', $provinsiId))
+            ->when($kabupaten, fn($q) => $q->where('kabupaten.nama_kabupaten', 'like', '%' . $kabupaten . '%'))
+            ->when($kawasan, fn($q) => $q->where('kawasan_transmigrasi.nama_kawasan', 'like', '%' . $kawasan . '%'))
+            ->when($lokasi, fn($q) => $q->where('kawasan_transmigrasi.nama_lokasi', 'like', '%' . $lokasi . '%'));
 
-        $tahun = $request->tahun;
+        $summaryWilayah = (clone $wilayahQuery)->selectRaw('
+                COUNT(DISTINCT provinsi.id) as total_provinsi,
+                COUNT(DISTINCT kabupaten.id) as total_kabupaten,
+                COUNT(DISTINCT kawasan_transmigrasi.id) as total_lokasi
+            ')->first();
 
-        // Base query untuk pie (HARUS pakai filter tahun juga)
-        $baseQuery = Shm::query();
+        $totalProvinsi  = $summaryWilayah->total_provinsi ?? 0;
+        $totalKabupaten = $summaryWilayah->total_kabupaten ?? 0;
+        $totalLokasi    = $summaryWilayah->total_lokasi ?? 0;
 
+        /*
+        |--------------------------------------------------------------------------
+        | 3. DATA UNTUK GRAFIK SHM
+        |--------------------------------------------------------------------------
+        */
+        $shmQuery = Shm::query();
+        $filterWilayah($shmQuery); // Pasang filter pencarian
+
+        // Filter Tahun khusus untuk SHM Pie
         if ($tahun) {
-            $baseQuery->where('target_tahunan', $tahun);
+            $shmQuery->where('target_tahunan', $tahun);
         }
 
-        $row = (clone $baseQuery)->selectRaw('
+        $rowShm = (clone $shmQuery)->selectRaw('
             SUM(clear_shm) as clear,
             SUM(realisasi_shm) as realisasi,
             SUM(bermasalah_shm) as bermasalah
         ')->first();
 
         $pie = [
-            ['name' => 'Clear', 'y' => (int) ($row->clear ?? 0)],
-            ['name' => 'Sudah Terbit', 'y' => (int) ($row->realisasi ?? 0)],
-            ['name' => 'Bermasalah', 'y' => (int) ($row->bermasalah ?? 0)],
+            ['name' => 'Clear', 'y' => (int) ($rowShm->clear ?? 0)],
+            ['name' => 'Sudah Terbit', 'y' => (int) ($rowShm->realisasi ?? 0)],
+            ['name' => 'Bermasalah', 'y' => (int) ($rowShm->bermasalah ?? 0)],
         ];
 
-        // Data tabel / lainnya (kalau masih perlu)
-        $query = Shm::query();
-
-        if ($tahun) {
-            $query->where('target_tahunan', $tahun);
-        }
-
-        $shm = $query->get();
-
-        // List tahun tetap
-        $listTahun = Shm::select('target_tahunan')
+        // Dropdown List Tahun SHM
+        $listTahunQuery = Shm::query();
+        $filterWilayah($listTahunQuery);
+        $listTahun = $listTahunQuery->select('target_tahunan')
+            ->whereNotNull('target_tahunan')
             ->distinct()
             ->orderBy('target_tahunan', 'desc')
             ->pluck('target_tahunan');
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | PIE HPL
-        |--------------------------------------------------------------------------
-        */
-        $hpl = (clone $baseQuery)->selectRaw('status_hpl, COUNT(*) as total')
-            ->groupBy('status_hpl')
-            ->pluck('total', 'status_hpl');
-
-        $pieHpl = [
-            ['name' => 'Serah', 'y' => (int) ($hpl['Serah'] ?? 0)],
-            ['name' => 'Belum', 'y' => (int) ($hpl['Belum'] ?? 0)],
-        ];
-
-        /*
-        |--------------------------------------------------------------------------
-        | PIE UPT
-        |--------------------------------------------------------------------------
-        */
-        $upt = (clone $baseQuery)->selectRaw('status_upt, COUNT(*) as total')
-            ->groupBy('status_upt')
-            ->pluck('total', 'status_upt');
-
-        $pieUpt = [
-            ['name' => 'Serah', 'y' => (int) ($upt['Serah'] ?? 0)],
-            ['name' => 'Bina',  'y' => (int) ($upt['Bina'] ?? 0)],
-        ];
-
-        /*
-        |--------------------------------------------------------------------------
-        | GRAFIK TAHUNAN (X = target_tahunan, Y = total bidang)
-        |--------------------------------------------------------------------------
-        */
-        $rows = Shm::query()
-            ->join('kawasan_transmigrasi', 'kawasan_transmigrasi.id', '=', 'shm.kawasan_transmigrasi_id')
-            ->join('desa', 'desa.id', '=', 'kawasan_transmigrasi.desa_id')
-            ->join('kecamatan', 'kecamatan.id', '=', 'desa.kecamatan_id')
-            ->join('kabupaten', 'kabupaten.id', '=', 'kecamatan.kabupaten_id')
-            ->join('provinsi', 'provinsi.id', '=', 'kabupaten.provinsi_id')
-            ->when($provinsiId, function ($q) use ($provinsiId) {
-                $q->where('provinsi.id', $provinsiId);
-            })
-            ->selectRaw('target_tahunan as tahun, SUM(bidang) as total_bidang')
-            ->groupBy('target_tahunan')
-            ->orderBy('target_tahunan')
+        // Grafik Kolom Tahunan SHM
+        $rowsTahunan = (clone $wilayahQuery)
+            ->join('shm', 'shm.kawasan_transmigrasi_id', '=', 'kawasan_transmigrasi.id')
+            ->selectRaw('shm.target_tahunan as tahun, SUM(shm.bidang) as total_bidang')
+            ->whereNotNull('shm.target_tahunan')
+            ->groupBy('shm.target_tahunan')
+            ->orderBy('shm.target_tahunan')
             ->get();
 
-        $tahunList  = $rows->pluck('tahun')->toArray();
-        $dataBidang = $rows->pluck('total_bidang')->map(fn($v) => (int)$v)->toArray();
-
+        $tahunList  = $rowsTahunan->pluck('tahun')->toArray();
+        $dataBidang = $rowsTahunan->pluck('total_bidang')->map(fn($v) => (int)$v)->toArray();
 
         /*
         |--------------------------------------------------------------------------
-        | REKAP PERMASALAHAN LAHAN
+        | 4. DATA UNTUK GRAFIK HPL
         |--------------------------------------------------------------------------
         */
+        $hplDokumenQuery = HplDokumen::query()
 
-        $plQuery = PermasalahanLahan::query()
-            ->join('kawasan_transmigrasi', 'kawasan_transmigrasi.id', '=', 'permasalahan_lahan.kawasan_transmigrasi_id')
-            ->join('desa', 'desa.id', '=', 'kawasan_transmigrasi.desa_id')
-            ->join('kecamatan', 'kecamatan.id', '=', 'desa.kecamatan_id')
-            ->join('kabupaten', 'kabupaten.id', '=', 'kecamatan.kabupaten_id')
-            ->join('provinsi', 'provinsi.id', '=', 'kabupaten.provinsi_id');
+        ->whereHas('hpl.kawasan', function ($q) use (
+            $provinsiId,
+            $kabupaten,
+            $kawasan,
+            $lokasi
+        ) {
 
-        if ($provinsiId) {
-            $plQuery->where('provinsi.id', $provinsiId);
-        }
+            $q->when($provinsiId, function ($q2) use ($provinsiId) {
+                $q2->whereHas(
+                    'desa.kecamatan.kabupaten.provinsi',
+                    fn($qq) => $qq->where('id', $provinsiId)
+                );
+            });
 
-        /* =========================
-        PIE JENIS PERMASALAHAN
-        ========================= */
-        $jenisData = (clone $plQuery)
+            $q->when($kabupaten, function ($q2) use ($kabupaten) {
+                $q2->whereHas(
+                    'desa.kecamatan.kabupaten',
+                    fn($qq) => $qq->where(
+                        'nama_kabupaten',
+                        'like',
+                        '%' . $kabupaten . '%'
+                    )
+                );
+            });
+
+            $q->when($kawasan, function ($q2) use ($kawasan) {
+                $q2->where(
+                    'nama_kawasan',
+                    'like',
+                    '%' . $kawasan . '%'
+                );
+            });
+
+            $q->when($lokasi, function ($q2) use ($lokasi) {
+                $q2->where(
+                    'nama_lokasi',
+                    'like',
+                    '%' . $lokasi . '%'
+                );
+            });
+        });
+
+        $statusDokumen = (clone $hplDokumenQuery)
+            ->selectRaw('jenis_dokumen, COUNT(*) as total')
+            ->groupBy('jenis_dokumen')
+            ->pluck('total', 'jenis_dokumen');
+
+        $pieStatusHpl = [
+            [
+                'name' => 'SK HPL',
+                'y' => (int) ($statusDokumen['sk'] ?? 0)
+            ],
+            [
+                'name' => 'Sertifikat',
+                'y' => (int) ($statusDokumen['sertifikat'] ?? 0)
+            ],
+            [
+                'name' => 'Peta',
+                'y' => (int) ($statusDokumen['peta'] ?? 0)
+            ],
+        ];
+        $totalHpl = Hpl::count();
+
+        $totalAdaPeta = (clone $hplDokumenQuery)
+            ->where('jenis_dokumen', 'peta')
+            ->distinct('hpl_id')
+            ->count('hpl_id');
+
+        $piePetaHpl = [
+            [
+                'name' => 'Ada Peta',
+                'y' => $totalAdaPeta
+            ],
+            [
+                'name' => 'Tidak Ada Peta',
+                'y' => max($totalHpl - $totalAdaPeta, 0)
+            ],
+        ];
+        /*
+        |--------------------------------------------------------------------------
+        | 5. DATA UNTUK GRAFIK PERMASALAHAN LAHAN
+        |--------------------------------------------------------------------------
+        */
+        $jenisData = (clone $wilayahQuery)
+            ->join('permasalahan_lahan', 'permasalahan_lahan.kawasan_transmigrasi_id', '=', 'kawasan_transmigrasi.id')
             ->join('jenis_permasalahan', 'jenis_permasalahan.jenis_pl_id', '=', 'permasalahan_lahan.jenis_pl_id')
-            ->selectRaw('jenis_permasalahan.nama_permasalahan, COUNT(DISTINCT permasalahan_lahan.pl_id) as total')
+            ->selectRaw('jenis_permasalahan.nama_permasalahan, SUM(permasalahan_lahan.jumlah_bidang) as total')
             ->groupBy('jenis_permasalahan.nama_permasalahan')
             ->pluck('total', 'jenis_permasalahan.nama_permasalahan');
 
         $pieJenisPermasalahan = [];
-
         foreach ($jenisData as $nama => $total) {
             $pieJenisPermasalahan[] = [
                 'name' => $nama,
@@ -166,107 +238,15 @@ class PimpinanController extends Controller
             ];
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | REKAP STATUS HPL
-        |--------------------------------------------------------------------------
-        */
-        $hplQuery = Hpl::with('kawasan.desa.kecamatan.kabupaten.provinsi');
+        // Ambil list SHM jika sewaktu-waktu dipakai di tabel
+        $shm = (clone $shmQuery)->get();
 
-        if ($provinsiId) {
-            $hplQuery->whereHas('kawasan.desa.kecamatan.kabupaten.provinsi', function ($q) use ($provinsiId) {
-                $q->where('id', $provinsiId);
-            });
-        }
-
-        $statusHpl = (clone $hplQuery)->selectRaw('status_hpl, COUNT(*) as total')
-            ->groupBy('status_hpl')
-            ->pluck('total', 'status_hpl');
-
-        $pieStatusHpl = [
-            ['name' => 'SK HPL',     'y' => (int) ($statusHpl['sk'] ?? 0)],
-            ['name' => 'Sertifikat', 'y' => (int) ($statusHpl['sertifikat'] ?? 0)],
-            ['name' => 'Usulan',     'y' => (int) ($statusHpl['usulan'] ?? 0)],
-        ];
-
-        $petaQuery = Hpl::query()
-            ->join('kawasan_transmigrasi', 'kawasan_transmigrasi.id', '=', 'hpl.kawasan_transmigrasi_id')
-            ->join('desa', 'desa.id', '=', 'kawasan_transmigrasi.desa_id')
-            ->join('kecamatan', 'kecamatan.id', '=', 'desa.kecamatan_id')
-            ->join('kabupaten', 'kabupaten.id', '=', 'kecamatan.kabupaten_id')
-            ->join('provinsi', 'provinsi.id', '=', 'kabupaten.provinsi_id');
-
-        if ($provinsiId) {
-            $petaQuery->where('provinsi.id', $provinsiId);
-        }
-
-        $rekapPeta = (clone $petaQuery)->selectRaw("
-                SUM(CASE WHEN hpl.peta = 1 THEN 1 ELSE 0 END) as ada_peta,
-                SUM(CASE WHEN hpl.peta = 0 THEN 1 ELSE 0 END) as tidak_ada_peta
-            ")->first();
-
-        $piePetaHpl = [
-            ['name' => 'Ada Peta', 'y' => (int) ($rekapPeta->ada_peta ?? 0)],
-            ['name' => 'Tidak Ada Peta', 'y' => (int) ($rekapPeta->tidak_ada_peta ?? 0)],
-        ];
-
-        $wilayahQuery = KawasanTransmigrasi::query()
-            ->join('desa', 'desa.id', '=', 'kawasan_transmigrasi.desa_id')
-            ->join('kecamatan', 'kecamatan.id', '=', 'desa.kecamatan_id')
-            ->join('kabupaten', 'kabupaten.id', '=', 'kecamatan.kabupaten_id')
-            ->join('provinsi', 'provinsi.id', '=', 'kabupaten.provinsi_id');
-
-        if ($provinsiId) {
-            $wilayahQuery->where('provinsi.id', $provinsiId);
-        }
-
-        $summaryWilayah = (clone $wilayahQuery)->selectRaw('
-                COUNT(DISTINCT provinsi.id) as total_provinsi,
-                COUNT(DISTINCT kabupaten.id) as total_kabupaten,
-                COUNT(DISTINCT kawasan_transmigrasi.id) as total_lokasi
-            ')->first();
-        $totalProvinsi  = $summaryWilayah->total_provinsi ?? 0;
-        $totalKabupaten = $summaryWilayah->total_kabupaten ?? 0;
-        $totalLokasi    = $summaryWilayah->total_lokasi ?? 0;
-
-        $query = KawasanTransmigrasi::query();
-
-        if ($request->provinsi) {
-            $query->whereHas('desa.kecamatan.kabupaten.provinsi', function ($q) use ($request) {
-                $q->where('id', $request->provinsi);
-            });
-        }
-
-        if ($request->kabupaten) {
-            $query->whereHas('desa.kecamatan.kabupaten', function ($q) use ($request) {
-                $q->where('nama_kabupaten', 'like', '%' . $request->kabupaten . '%');
-            });
-        }
-
-        if ($request->kawasan) {
-            $query->where('nama_kawasan', 'like', '%' . $request->kawasan . '%');
-        }
-
-        if ($request->lokasi) {
-            $query->where('nama_lokasi', 'like', '%' . $request->lokasi . '%');
-        }
-
-        $data = $query->get();
-
-
-
-        return view('pimpinan.dashboard', compact(
-            'provinsiList',
-            'provinsiId',
+        return view('admin.dashboard', compact(
+            'provinsiList', 'provinsiId',
             'pie',
-            'pieHpl',
-            'pieUpt',
-            'tahunList','piePetaHpl',
-            'dataBidang', 'pieStatusHpl',
-            'totalProvinsi',
-            'totalKabupaten',
-            'totalLokasi','shm','listTahun', 'pieJenisPermasalahan',
-            
+            'tahunList', 'dataBidang',
+            'totalProvinsi', 'totalKabupaten', 'totalLokasi',
+            'listTahun', 'pieJenisPermasalahan', 'shm', 'hplDokumenQuery', 'pieStatusHpl', 'piePetaHpl'
         ));
     }
 }

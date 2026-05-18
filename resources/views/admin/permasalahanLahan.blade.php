@@ -18,18 +18,15 @@
             <div class="p-2 w-full">
 
                 <div class="flex flex-col md:flex-row items-start justify-between space-y-3 md:space-y-0 md:space-x-4 p-4">
-                    <h2 class="text-2xl font-bold text-gray-700">
-                        Permasalahan Lahan
+                    <h2 class="text-2xl font-bold text-slate-800 tracking-tight">
+                        Manajemen <span class="text-blue-600">Permasalahan Lahan</span>
                     </h2>
 
                     <div class="flex flex-col sm:flex-row gap-3">
                         <button
                             data-modal-target="tambah-modal"
                             data-modal-toggle="tambah-modal"
-                            class="px-5 py-2.5 text-sm font-medium text-white
-                                bg-blue-600 rounded-lg shadow-sm
-                                hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300
-                                transition">
+                            class="flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-none transition-all duration-300">
                             Tambah Permasalahan Lahan
                         </button>
                     </div>
@@ -92,11 +89,28 @@
                                         @php
                                             $totalDok = $kawasan->permasalahan?->sum(fn($p) => $p->dokumen?->count() ?? 0) ?? 0;
                                         @endphp
+
                                         @if($totalDok > 0)
                                             <button
                                                 data-modal-target="dokumen-modal-{{ $kawasan->id }}"
                                                 data-modal-toggle="dokumen-modal-{{ $kawasan->id }}"
-                                                class="text-blue-600 font-medium hover:underline">
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all font-bold text-xs shadow-md
+                                                {{ $totalDok > 0
+                                                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100'
+                                                    : 'bg-slate-100 text-slate-400 hover:bg-slate-200 shadow-none border border-slate-200'
+                                                }}">
+                                                
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="h-4 w-4"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor">
+                                                    <path stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                                </svg>
+
                                                 {{ $totalDok }} Dokumen
                                             </button>
                                         @else
@@ -109,35 +123,25 @@
                                         <div class="flex justify-center gap-3">
                                             {{-- DETAIL --}}
                                             <button type="button" onclick="openModal('detail-modal-{{ $kawasan->id }}')"
-                                                class="text-blue-600 hover:text-blue-800" title="Detail">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                                </svg>
+                                                class="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-600 hover:text-white transition-all" title="Detail">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             </button>
 
                                             {{-- EDIT --}}
                                             <button type="button"
                                                 onclick="openModal('edit-modal-{{ $kawasan->id }}')"
-                                                class="text-yellow-600 hover:text-yellow-800"
+                                                class="p-2 text-amber-600 bg-amber-50 rounded-lg hover:bg-amber-600 hover:text-white transition-all"
                                                 title="Edit">
                                                 
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                                </svg>
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                             </button>
 
                                             {{-- DELETE --}}
                                             <form action="{{ route('deletePl', $kawasan->id) }}" method="POST" onsubmit="return confirm('Yakin hapus semua permasalahan di kawasan ini?')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-800" title="Hapus Semua Permasalahan">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4a1 1 0 011 1v3H9V4a1 1 0 011-1z"/>
-                                                    </svg>
+                                                <button type="submit" class="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-600 hover:text-white transition-all" title="Hapus Semua Permasalahan">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4a1 1 0 011 1v3H9V4a1 1 0 011-1z"/></svg>
                                                 </button>
                                             </form>
                                         </div>
@@ -167,9 +171,14 @@
 
     {{-- MODAL TAMBAH DATA --}}
     <div id="tambah-modal" tabindex="-1" aria-hidden="true" class="fixed inset-0 z-50 hidden bg-black/50 flex items-start justify-center overflow-y-auto">
-        <div class="relative mx-auto mt-10 mb-10 w-[95%] max-w-4xl">
-            <div class="bg-white rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
-                <h3 class="text-xl font-bold text-gray-800 mb-6">Tambah Data Permasalahan Lahan</h3>
+        <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+
+            <!-- HEADER -->
+            <div class="bg-blue-600 px-8 py-6 text-white flex justify-between items-center">
+                <h3 class="text-xl font-black uppercase tracking-tight">
+                    Input Data Permasalahan Lahan
+                </h3>
+            </div>
 
                 @if ($errors->any())
                     <div class="p-4 mb-6 text-red-700 bg-red-100 rounded-lg">
@@ -181,179 +190,195 @@
                     </div>
                 @endif
 
-                <form action="{{ route('storePl') }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('storePl') }}" method="POST" enctype="multipart/form-data" class="flex flex-col overflow-hidden">
                     @csrf
-                    {{-- DATA WILAYAH --}}
-                    <div class="border border-gray-200 rounded-xl p-5 mb-6">
-                        <h4 class="text-md font-semibold text-gray-700 mb-4">Data Wilayah</h4>
-                        <div class="grid md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Provinsi</label>
-                                <select id="provinsi" name="provinsi_id" class="{{ $input }}" required>
-                                    <option value="">-- Pilih Provinsi --</option>
-                                    @foreach ($provinsi as $item)
-                                        <option value="{{ $item->id }}">{{ $item->nama_provinsi }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Kabupaten</label>
-                                <select id="kabupaten" name="kabupaten_id" class="{{ $input }}" required>
-                                    <option value="">-- Pilih Kabupaten --</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Kecamatan</label>
-                                <input type="text" name="nama_kecamatan" class="{{ $input }}" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Desa</label>
-                                <input type="text" name="nama_desa" class="{{ $input }}" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Nama Kawasan</label>
-                                <input type="text" name="nama_kawasan" class="{{ $input }}" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Nama Lokasi</label>
-                                <input type="text" name="nama_lokasi" class="{{ $input }}" required>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="p-8 overflow-y-auto space-y-8 bg-white">
+                        {{-- DATA WILAYAH --}}
+                        <div>
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                                Informasi Wilayah
+                            </h4>
 
-                    {{-- DATA PERMASALAHAN --}}
-                    <div class="border border-gray-200 rounded-2xl p-6 mb-6 bg-white">
-                        <div class="flex items-center justify-between mb-5">
-                            <h4 class="text-lg font-semibold text-gray-800">Data Permasalahan Lahan</h4>
-                        </div>
-                        <div class="grid md:grid-cols-4 gap-4 mb-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-600 mb-1">Status Lahan</label>
-                                <select name="status_lahan" class="{{ $input }}" required>
-                                    <option value="">-- Pilih Status --</option>
-                                    <option value="HPL">HPL</option>
-                                    <option value="Pencadangan">Pencadangan</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-600 mb-1">Pola</label>
-                                <input type="text" name="pola" class="{{ $input }}" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-600 mb-1">Tahun Patan</label>
-                                <input type="number" name="tahun_patan" class="{{ $input }}" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-600 mb-1">Total KK</label>
-                                <input type="number" name="jumlah_kk" class="{{ $input }}" required>
-                            </div>
-                        </div>
-
-                        {{-- TABLE RINCIAN JENIS --}}
-                        <div class="border border-gray-200 rounded-xl overflow-hidden">
-                            <div class="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
-                                <span class="text-sm font-semibold text-gray-700">Rincian Jenis Permasalahan</span>
-                                <button 
-                                    id="btn-tambah-permasalahan"
-                                    type="button"
-                                    onclick="tambahPermasalahan()" 
-                                    class="text-sm px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition
-                                    {{ $jenisPermasalahan->count() >= 5 ? 'hidden' : '' }}">
-                                    + Tambah
-                                </button>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-sm">
-                                    <thead class="bg-white-100 text-gray-700">
-                                        <tr>
-                                            <th class="p-3 text-left w-[50%]">Jenis Permasalahan</th>
-                                            <th class="p-3 text-left w-[30%]">Jumlah Bidang</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="body-permasalahan" class="divide-y">
-
-                                        @foreach($jenisPermasalahan as $index => $j)
-                                        <tr class="hover:bg-gray-50">
-
-                                            <td class="p-3">
-                                                <input type="hidden"
-                                                    name="permasalahan[{{ $index }}][jenis_pl_id]"
-                                                    value="{{ $j->jenis_pl_id }}">
-
-                                                <input type="text"
-                                                    value="{{ $j->nama_permasalahan }}"
-                                                    class="w-full border rounded-lg px-3 py-2 bg-white"
-                                                    readonly>
-                                            </td>
-
-                                            <td class="p-3">
-                                                <input type="number"
-                                                    name="permasalahan[{{ $index }}][jumlah_bidang]"
-                                                    class="{{ $input }}"
-                                                    min="0"
-                                                    required>
-                                            </td>
-
-                                        </tr>
+                            <div class="grid md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Provinsi</label>
+                                    <select id="provinsi" name="provinsi_id" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold {{ $input }}" required>
+                                        <option value="">-- Pilih Provinsi --</option>
+                                        @foreach ($provinsi as $item)
+                                            <option value="{{ $item->id }}">{{ $item->nama_provinsi }}</option>
                                         @endforeach
-                                    </tbody>
-                                </table>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Kabupaten</label>
+                                    <select id="kabupaten" name="kabupaten_id" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold {{ $input }}" required>
+                                        <option value="">-- Pilih Kabupaten --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Kecamatan</label>
+                                    <input type="text" name="nama_kecamatan" placeholder="Nama Kecamatan" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold {{ $input }}" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Nama Kawasan</label>
+                                    <input type="text" name="nama_kawasan" placeholder="Nama Kawasan" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold {{ $input }}" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Desa</label>
+                                    <input type="text" name="nama_desa" placeholder="Nama Desa" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold {{ $input }}" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Nama Lokasi</label>
+                                    <input type="text" name="nama_lokasi" placeholder="Nama Lokasi" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold {{ $input }}" required>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mt-6">
-                            <label class="block text-sm font-medium text-gray-600 mb-1">Deskripsi Permasalahan</label>
-                            <textarea name="deskripsi" rows="4" class="{{ $input }}" placeholder="Tuliskan uraian singkat permasalahan..." required></textarea>
-                        </div>
-                    </div>
+                        {{-- DATA PERMASALAHAN --}}
+                        <div class="border border-gray-200 rounded-2xl p-6 mb-6 bg-white">
+                            <div class="flex items-center justify-between mb-5">
+                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                                Data Permasalahan Lahan
+                                </h4>
+                            </div>
+                            <div class="grid md:grid-cols-4 gap-4 mb-6">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Status Lahan</label>
+                                    <select name="status_lahan" class="w-full border-slate-200 rounded-xl py-3 px-4 font-black text-blue-700 {{ $input }}" required>
+                                        <option value="">-- Pilih Status --</option>
+                                        <option value="HPL">HPL</option>
+                                        <option value="Pencadangan">Pencadangan</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Pola</label>
+                                    <input type="text" name="pola" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold{{ $input }}" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Tahun Patan</label>
+                                    <input type="number" name="tahun_patan" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold {{ $input }}" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Total KK</label>
+                                    <input type="number" name="jumlah_kk" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold {{ $input }}" required>
+                                </div>
+                            </div>
 
-                    {{-- PROGRESS --}}
-                    <div class="border border-gray-200 rounded-xl p-5 mb-6">
-                        <h4 class="font-semibold text-gray-700 mb-4">Progress Penanganan</h4>
-                        <div class="grid md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Tahun Progress</label>
-                                <input type="number" name="tahun" class="{{ $input }}" required>
+                            {{-- TABLE RINCIAN JENIS --}}
+                            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                                <div class="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-gray-700">Rincian Jenis Permasalahan</span>
+                                    <button 
+                                        id="btn-tambah-permasalahan"
+                                        type="button"
+                                        onclick="tambahPermasalahan()" 
+                                        class="text-sm px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition
+                                        {{ $jenisPermasalahan->count() >= 5 ? 'hidden' : '' }}">
+                                        + Tambah
+                                    </button>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm">
+                                        <thead class="bg-white-100 text-gray-700">
+                                            <tr>
+                                                <th class="p-3 text-left w-[50%]">Jenis Permasalahan</th>
+                                                <th class="p-3 text-left w-[30%]">Jumlah Bidang</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="body-permasalahan" class="divide-y">
+
+                                            @foreach($jenisPermasalahan as $index => $j)
+                                            <tr class="hover:bg-gray-50">
+
+                                                <td class="p-3">
+                                                    <input type="hidden"
+                                                        name="permasalahan[{{ $index }}][jenis_pl_id]"
+                                                        value="{{ $j->jenis_pl_id }}">
+
+                                                    <input type="text" 
+                                                        value="{{ $j->nama_permasalahan }}"
+                                                        class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold
+                                                        readonly">
+                                                </td>
+
+                                                <td class="p-3">
+                                                    <input type="number"
+                                                        name="permasalahan[{{ $index }}][jumlah_bidang]"
+                                                        class="{{ $input }}"
+                                                        min="0"
+                                                        required>
+                                                </td>
+
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Jumlah Kasus</label>
-                                <input type="number" name="jumlah_kasus" min="0" class="{{ $input }}" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Status Penanganan</label>
-                                <select name="status_penanganan" class="{{ $input }}" required>
-                                    <option value="">-- Pilih Status --</option>
-                                    <option value="Aktif">Aktif</option>
-                                    <option value="Selesai">Selesai</option>
-                                </select>
+
+                            <div class="mt-6">
+                                <label class="block text-sm font-medium text-gray-600 mb-1">Deskripsi Permasalahan</label>
+                                <textarea name="deskripsi" rows="4" class="{{ $input }}" placeholder="Tuliskan uraian singkat permasalahan..." required></textarea>
                             </div>
                         </div>
-                        <div class="grid md:grid-cols-2 gap-4 mt-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Tindak Lanjut</label>
-                                <textarea name="tindak_lanjut" rows="3" class="{{ $input }}"></textarea>
+
+                        {{-- PROGRESS --}}
+                        <div class="border border-gray-200 rounded-xl p-5 mb-6">
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                                Progress Penanganan
+                            </h4>
+                            <div class="grid md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Tahun Progress</label>
+                                    <input type="number" name="tahun" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold {{ $input }}" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Jumlah Kasus</label>
+                                    <input type="number" name="jumlah_kasus" min="0" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold {{ $input }}" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Status Penanganan</label>
+                                    <select name="status_penanganan" class="w-full border-slate-200 rounded-xl py-3 px-4 font-black text-blue-700 {{ $input }}" required>
+                                        <option value="">-- Pilih Status --</option>
+                                        <option value="Aktif">Aktif</option>
+                                        <option value="Selesai">Selesai</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Rekomendasi</label>
-                                <textarea name="rekomendasi" rows="3" class="{{ $input }}"></textarea>
+                            <div class="grid md:grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Tindak Lanjut</label>
+                                    <textarea name="tindak_lanjut" rows="3" class=" w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold {{ $input }}"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Rekomendasi</label>
+                                    <textarea name="rekomendasi" rows="3" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold {{ $input }}"></textarea>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {{-- DOKUMEN --}}
-                    <div class="border border-gray-200 rounded-xl p-5 mb-6">
-                        <h4 class="font-semibold text-gray-700 mb-4">Dokumen Pendukung</h4>
-                        <input type="file" name="dokumen[]" multiple class="{{ $input }}" accept=".pdf,.jpg,.jpeg,.png">
-                    </div>
+                        {{-- DOKUMEN --}}
+                        <div class="border border-gray-200 rounded-xl p-5 mb-6">
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Dokumen Pendukung</h4>
+                            <input type="file" name="dokumen[]" multiple class="{{ $input }}" accept=".pdf,.jpg,.jpeg,.png">
+                        </div>
 
-                    <div class="flex justify-end gap-3 mt-6">
-                        <button type="button" data-modal-hide="tambah-modal" class="px-5 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">Batal</button>
-                        <button type="submit" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg shadow">Simpan Data</button>
+                        <div class="p-6 bg-slate-50 flex justify-end gap-3">
+                            <button type="button" data-modal-hide="tambah-modal"
+                                class="px-6 py-2 bg-gray-200 rounded-xl">
+                                Batal
+                            </button>
+
+                            <button type="submit"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-xl shadow">
+                                Simpan
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
         </div>
-    </div>
+    </div>  
 
     {{-- LOOPING MODAL PER KAWASAN (DOKUMEN, DETAIL, EDIT) --}}
     @foreach ($kawasanList as $kawasan)
@@ -426,137 +451,179 @@
         </div>
 
         {{-- MODAL EDIT --}}
-        <div id="edit-modal-{{ $kawasan->id }}" class="hidden fixed inset-0 z-50 bg-black/50 flex items-start justify-center overflow-y-auto">
+        <div id="edit-modal-{{ $kawasan->id }}" class="fixed inset-0 z-50 hidden bg-black/50 flex items-start justify-center p-4">
+
             @php
                 $permasalahan = $kawasan->permasalahan ?? collect();
                 $firstPer = $permasalahan->first();
                 $latestProgress = optional($firstPer) ? $firstPer->progress->sortByDesc('tahun')->first() : null;
             @endphp
-            <div class="relative mx-auto mt-10 mb-10 w-[95%] max-w-4xl">
-                <div class="bg-white rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
-                    <h3 class="text-xl font-bold text-gray-800 mb-6">Edit Data Permasalahan Lahan</h3>
-                    
-                    <form action="{{ route('updatePl', $firstPer?->pl_id ?? 0) }}" method="POST" enctype="multipart/form-data">
-                        @csrf
-                        @method('PUT')
 
-                        <div class="border border-gray-200 rounded-2xl p-6 mb-6 bg-white">
-                            <h3 class="text-md font-semibold text-gray-700 mb-3">Data Wilayah</h3>
+            <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full h-[90vh] flex flex-col border border-slate-200">
+
+                <form action="{{ route('updatePl', $firstPer?->pl_id) }}" method="POST" enctype="multipart/form-data" class="flex flex-col h-full">
+                    @csrf
+                    @method('PUT')
+
+                    <!-- HEADER -->
+                    <div class="bg-blue-600 px-8 py-6 text-white rounded-t-3xl">
+                        <h3 class="text-xl font-black uppercase tracking-tight">
+                            Edit Data Permasalahan Lahan
+                        </h3>
+                    </div>
+
+                    <!-- BODY (SCROLL) -->
+                    <div class="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+
+                        <!-- INFORMASI WILAYAH -->
+                        <div class="border border-gray-200 rounded-2xl p-6 bg-white">
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                                Informasi Wilayah
+                            </h4>
+
                             <div class="grid grid-cols-2 gap-4">
-                                <div><label class="block text-sm font-medium">Kecamatan</label><input type="text" name="nama_kecamatan" value="{{ $kawasan->desa->kecamatan->nama_kecamatan ?? '' }}" class="{{ $input }}"></div>
-                                <div><label class="block text-sm font-medium">Desa</label><input type="text" name="nama_desa" value="{{ $kawasan->desa->nama_desa ?? '' }}" class="{{ $input }}"></div>
-                                <div><label class="block text-sm font-medium">Nama Kawasan</label><input type="text" name="nama_kawasan" value="{{ $kawasan->nama_kawasan ?? '' }}" class="{{ $input }}"></div>
-                                <div><label class="block text-sm font-medium">Nama Lokasi</label><input type="text" name="nama_lokasi" value="{{ $kawasan->nama_lokasi ?? '' }}" class="{{ $input }}"></div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Kecamatan</label>
+                                    <input type="text" name="nama_kecamatan" value="{{ $kawasan->desa->kecamatan->nama_kecamatan ?? '' }}" class="{{ $input }}" placeholder="Kecamatan">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Desa</label>
+                                    <input type="text" name="nama_desa" value="{{ $kawasan->desa->nama_desa ?? '' }}" class="{{ $input }}" placeholder="Desa">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Kawasan</label>
+                                    <input type="text" name="nama_kawasan" value="{{ $kawasan->nama_kawasan ?? '' }}" class="{{ $input }}" placeholder="Nama Kawasan">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Lokasi</label>
+                                    <input type="text" name="nama_lokasi" value="{{ $kawasan->nama_lokasi ?? '' }}" class="{{ $input }}" placeholder="Nama Lokasi">
+                                </div>
                             </div>
                         </div>
 
-                        <div class="border border-gray-200 rounded-2xl p-6 mb-6 bg-white">
-                            <div class="flex items-center justify-between mb-5">
-                                <h4 class="text-lg font-semibold text-gray-800">Data Permasalahan Lahan</h4>
-                            </div>
-                            <div class="grid md:grid-cols-4 gap-4 mb-4 mt-4">
+                        <!-- DATA PERMASALAHAN -->
+                        <div class="border border-gray-200 rounded-2xl p-6 bg-white">
+
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                                Data Permasalahan Lahan
+                            </h4>
+
+                            <div class="grid md:grid-cols-4 gap-4 mb-4">
                                 <div>
-                                    <label class="block text-sm font-medium mb-4">Status Lahan</label>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Status Lahan</label>
                                     <select name="status_lahan" class="{{ $input }}">
                                         <option value="HPL" {{ $firstPer?->status_lahan == 'HPL' ? 'selected' : '' }}>HPL</option>
                                         <option value="Pencadangan" {{ $firstPer?->status_lahan == 'Pencadangan' ? 'selected' : '' }}>Pencadangan</option>
                                     </select>
                                 </div>
-                                <div><label class="block text-sm font-medium mb-4">Pola</label><input type="text" name="pola" value="{{ $firstPer?->pola }}" class="{{ $input }}"></div>
-                                <div><label class="block text-sm font-medium mb-4">Tahun Patan</label><input type="number" name="tahun_patan" value="{{ $firstPer?->tahun_patan }}" class="{{ $input }}"></div>
-                                <div><label class="block text-sm font-medium mb-4">Jumlah KK</label><input type="number" name="jumlah_kk" value="{{ $firstPer?->jumlah_kk }}" class="{{ $input }}"></div>
+
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Pola</label>
+                                    <input type="text" name="pola" value="{{ $firstPer?->pola }}" class="{{ $input }}" placeholder="Pola">
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Tahun Patan</label>
+                                    <input type="number" name="tahun_patan" value="{{ $firstPer?->tahun_patan }}" class="{{ $input }}" placeholder="Tahun Patan">
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Jumlah KK</label>
+                                    <input type="number" name="jumlah_kk" value="{{ $firstPer?->jumlah_kk }}" class="{{ $input }}" placeholder="Jumlah KK">
+                                </div>
                             </div>
 
-                            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                            <!-- RINCIAN -->
+                            <div class="border border-gray-200 rounded-xl">
                                 <div class="bg-gray-50 px-4 py-3 border-b flex justify-between">
-                                    <span class="text-sm font-semibold text-gray-700">Rincian Jenis Permasalahan</span>
-                                    <button 
-                                        id="btn-tambah-edit-{{ $kawasan->id }}"
-                                        type="button"
-                                        onclick="tambahPermasalahanEdit({{ $kawasan->id }})"
-                                        class="text-sm px-3 py-1.5 bg-blue-700 text-white rounded-lg
-                                        {{ $permasalahan->count() >= $jenisPermasalahan->count() ? 'hidden' : '' }}">
-                                        + Tambah
-                                    </button>
+                                    <span class="text-sm font-semibold text-gray-700">Rincian Permasalahan</span>
                                 </div>
+
                                 <div class="overflow-x-auto">
                                     <table class="w-full text-sm">
-                                        <tbody id="body-permasalahan-edit-{{ $kawasan->id }}">
+                                        <tbody>
                                             @foreach($jenisPermasalahan as $i => $jenis)
+                                                @php
+                                                    $data = $permasalahan->firstWhere('jenis_pl_id', $jenis->jenis_pl_id);
+                                                @endphp
+                                                <tr>
+                                                    <td class="p-3 w-[60%]">
+                                                        <input type="hidden" name="permasalahan[{{ $i }}][jenis_pl_id]" value="{{ $jenis->jenis_pl_id }}">
+                                                        <input type="text" value="{{ $jenis->nama_permasalahan }}" class="{{ $input }} bg-gray-100" readonly>
 
-                                            @php
-                                                $data = $permasalahan->firstWhere('jenis_pl_id', $jenis->jenis_pl_id);
-                                            @endphp
+                                                        @if($data)
+                                                            <input type="hidden" name="permasalahan[{{ $i }}][pl_id]" value="{{ $data->pl_id }}">
+                                                        @endif
+                                                    </td>
 
-                                            <tr>
-                                                <td class="p-3 w-[50%]">
-
-                                                    <input type="hidden"
-                                                        name="permasalahan[{{ $i }}][jenis_pl_id]"
-                                                        value="{{ $jenis->jenis_pl_id }}">
-
-                                                    <input type="text"
-                                                        value="{{ $jenis->nama_permasalahan }}"
-                                                        class="{{ $input }} bg-gray-100"
-                                                        readonly>
-
-                                                    @if($data)
-                                                        <input type="hidden"
-                                                            name="permasalahan[{{ $i }}][pl_id]"
-                                                            value="{{ $data->pl_id }}">
-                                                    @endif
-
-                                                </td>
-
-                                                <td class="p-3 w-[30%]">
-                                                    <input
-                                                        type="number"
-                                                        name="permasalahan[{{ $i }}][jumlah_bidang]"
-                                                        value="{{ $data->jumlah_bidang ?? 0 }}"
-                                                        class="{{ $input }}"
-                                                        min="0">
-                                                </td>
-
-                                            </tr>
-
+                                                    <td class="p-3 w-[40%]">
+                                                        <input type="number"
+                                                            name="permasalahan[{{ $i }}][jumlah_bidang]"
+                                                            value="{{ $data->jumlah_bidang ?? 0 }}"
+                                                            class="{{ $input }}"
+                                                            min="0">
+                                                    </td>
+                                                </tr>
                                             @endforeach
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
 
-                            <div class="mt-6">
-                                <label class="block text-sm font-medium text-gray-600 mb-1">Deskripsi Permasalahan</label>
-                                <textarea name="deskripsi" rows="3" class="{{ $input }}">{{ old('deskripsi', $firstPer?->deskripsi) }}</textarea>
+                            <div class="mt-4">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Deskripsi</label>
+                                <textarea name="deskripsi" rows="3" class="{{ $input }} mt-4" placeholder="Deskripsi Permasalahan">{{ old('deskripsi', $firstPer?->deskripsi) }}
+                                </textarea>
                             </div>
                         </div>
 
-                        <div class="border border-gray-200 rounded-xl p-5 mb-6 bg-white">
-                            <h4 class="font-semibold text-gray-700 mb-4">Progress Penanganan</h4>
-                            <div class="grid md:grid-cols-3 gap-4 mt-4">
-                                <div><label class="block text-sm font-medium mb-4">Tahun Progress</label><input type="number" name="tahun" class="{{ $input }}" value="{{ $latestProgress?->tahun }}"></div>
-                                <div><label class="block text-sm font-medium mb-4">Jumlah Kasus</label><input type="number" name="jumlah_kasus" min="0" class="{{ $input }}" value="{{ $latestProgress?->jumlah_kasus }}"></div>
+                        <!-- PROGRESS -->
+                        <div class="border border-gray-200 rounded-2xl p-6 bg-white">
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                                Progress Penanganan
+                            </h4>
+
+                            <div class="grid md:grid-cols-3 gap-4">
                                 <div>
-                                    <label class="block text-sm font-medium mb-4">Status Penanganan</label>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Tahun</label>
+                                    <input type="number" name="tahun" value="{{ $latestProgress?->tahun }}" class="{{ $input }}" placeholder="Tahun">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Jumlah Kasus</label>
+                                    <input type="number" name="jumlah_kasus" value="{{ $latestProgress?->jumlah_kasus }}" class="{{ $input }}" placeholder="Jumlah Kasus">
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Status Penanganan</label>
                                     <select name="status_penanganan" class="{{ $input }}">
-                                        <option value="">-- Pilih Status --</option>
+                                        <option value="" disabled >Status</option>
                                         <option value="Aktif" {{ $latestProgress?->status_penanganan == 'Aktif' ? 'selected' : '' }}>Aktif</option>
                                         <option value="Selesai" {{ $latestProgress?->status_penanganan == 'Selesai' ? 'selected' : '' }}>Selesai</option>
                                     </select>
                                 </div>
                             </div>
+
                             <div class="grid md:grid-cols-2 gap-4 mt-4">
-                                <div><label class="block text-sm font-medium mb-4">Tindak Lanjut</label><textarea name="tindak_lanjut" rows="3" class="{{ $input }}">{{ $latestProgress?->tindak_lanjut }}</textarea></div>
-                                <div><label class="block text-sm font-medium mb-4">Rekomendasi</label><textarea name="rekomendasi" rows="3" class="{{ $input }}">{{ $latestProgress?->rekomendasi }}</textarea></div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Tindak Lanjut</label>
+                                    <textarea name="tindak_lanjut" class="{{ $input }}" placeholder="Tindak Lanjut">{{ $latestProgress?->tindak_lanjut }}</textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Rekomendasi</label>
+                                    <textarea name="rekomendasi" class="{{ $input }}" placeholder="Rekomendasi">{{ $latestProgress?->rekomendasi }}</textarea>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="flex justify-end gap-3">
-                            <button type="button" onclick="closeModal('edit-modal-{{ $kawasan->id }}')" class="px-5 py-2 bg-gray-200 rounded-lg">Batal</button>
-                            <button type="submit" class="px-5 py-2 bg-slate-800 text-white rounded-lg">Update</button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+
+                    <!-- FOOTER -->
+                    <div class="flex justify-end gap-3 p-6 border-t bg-white">
+                        <button type="button" onclick="closeModal('edit-modal-{{ $kawasan->id }}')" class="px-5 py-2 bg-gray-200 rounded-lg">Batal</button>
+                        <button type="submit" class="px-5 py-2 bg-slate-800 text-white rounded-lg">Update</button>
+                    </div>
+
+                </form>
             </div>
         </div>
 
@@ -569,8 +636,8 @@
                 {{-- HEADER --}}
                 <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 shrink-0 flex justify-between items-center">
                     <div>
-                        <h3 class="text-lg font-bold text-white">Detail Permasalahan Lahan</h3>
-                        <p class="text-sm text-blue-100 mt-0.5">{{ $kawasan->nama_kawasan }}</p>
+                        <h3 class="text-lg font-bold text-black">Detail Permasalahan Lahan</h3>
+                        <p class="text-sm text-blue-700 mt-0.5">{{ $kawasan->nama_kawasan }}</p>
                     </div>
                     <button type="button" onclick="closeModal('detail-modal-{{ $kawasan->id }}')" class="text-white hover:text-gray-200 p-2 focus:outline-none transition">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -746,7 +813,7 @@
                     </td>
 
                     <td class="p-3 text-center">
-                        <button type="button" onclick="hapusRow(this, {{ $kawasan->id }})" class="px-3 py-1.5 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-lg">
+                        <button type="button" onclick="hapusRow(this)" class="px-3 py-1.5 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-lg">
                             Hapus
                         </button>
                     </td>
@@ -850,5 +917,15 @@
         }
     </script>
     <script src="https://unpkg.com/flowbite@1.6.5/dist/flowbite.min.js"></script>
+    <style>
+    .input {
+        @apply w-full border border-slate-200 rounded-xl py-3 px-4 shadow-sm font-semibold;
+    }
+
+    .section-title {
+        @apply text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4;
+    }
+    
+    </style>
 </body>
 </html>

@@ -37,6 +37,7 @@ Route::middleware(['akses:admin', 'prevent-back-history'])->group(function () {
     Route::put('/admin/hpl/dokumen/{id}', [AdminController::class, 'updateDokumenHpl'])->name('updateDokumenHpl');
     Route::delete('/admin/hpl/dokumen/{id}', [AdminController::class, 'deleteDokumenHpl'])->name('deleteDokumenHpl');
     Route::post('/admin/hpl/dokumen/store', [AdminController::class, 'storeDokumenHpl'])->name('storeDokumenHpl');
+    Route::post('/admin/hpl/dokumen/tambah', [AdminController::class, 'storeDokumenTambahan'])->name('storeDokumenTambahan');
     Route::post('/admin/hpl/check-kawasan', [AdminController::class, 'checkKawasan'])->name('checkKawasan');
 
     Route::get('/admin/permasalahanLahan', [AdminController::class, 'getPermasalahanLahan'])->name('getPermasalahanLahan');

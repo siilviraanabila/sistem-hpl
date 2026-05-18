@@ -13,6 +13,10 @@ class HplDokumen extends Model
 
     protected $fillable = [
         'hpl_id',
+        'jenis_dokumen',
+        'nomor',
+        'tanggal',
+        'luas',
         'nama_dokumen',
         'path_file',
     ];

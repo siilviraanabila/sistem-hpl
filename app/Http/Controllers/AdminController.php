@@ -16,6 +16,7 @@ use App\Models\JenisPermasalahan;
 use App\Models\PlDokumen;
 use App\Models\PlProgress;
 use App\Models\Provinsi;
+use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -143,29 +144,86 @@ class AdminController extends Controller
         | 4. DATA UNTUK GRAFIK HPL
         |--------------------------------------------------------------------------
         */
-        $hplQuery = Hpl::query();
-        $filterWilayah($hplQuery); // Pasang filter pencarian
+        $hplDokumenQuery = HplDokumen::query()
 
-        $statusHpl = (clone $hplQuery)->selectRaw('status_hpl, COUNT(*) as total')
-            ->groupBy('status_hpl')
-            ->pluck('total', 'status_hpl');
+        ->whereHas('hpl.kawasan', function ($q) use (
+            $provinsiId,
+            $kabupaten,
+            $kawasan,
+            $lokasi
+        ) {
+
+            $q->when($provinsiId, function ($q2) use ($provinsiId) {
+                $q2->whereHas(
+                    'desa.kecamatan.kabupaten.provinsi',
+                    fn($qq) => $qq->where('id', $provinsiId)
+                );
+            });
+
+            $q->when($kabupaten, function ($q2) use ($kabupaten) {
+                $q2->whereHas(
+                    'desa.kecamatan.kabupaten',
+                    fn($qq) => $qq->where(
+                        'nama_kabupaten',
+                        'like',
+                        '%' . $kabupaten . '%'
+                    )
+                );
+            });
+
+            $q->when($kawasan, function ($q2) use ($kawasan) {
+                $q2->where(
+                    'nama_kawasan',
+                    'like',
+                    '%' . $kawasan . '%'
+                );
+            });
+
+            $q->when($lokasi, function ($q2) use ($lokasi) {
+                $q2->where(
+                    'nama_lokasi',
+                    'like',
+                    '%' . $lokasi . '%'
+                );
+            });
+        });
+
+        $statusDokumen = (clone $hplDokumenQuery)
+            ->selectRaw('jenis_dokumen, COUNT(*) as total')
+            ->groupBy('jenis_dokumen')
+            ->pluck('total', 'jenis_dokumen');
 
         $pieStatusHpl = [
-            ['name' => 'SK HPL',     'y' => (int) ($statusHpl['sk'] ?? 0)],
-            ['name' => 'Sertifikat', 'y' => (int) ($statusHpl['sertifikat'] ?? 0)],
-            ['name' => 'Usulan',     'y' => (int) ($statusHpl['usulan'] ?? 0)],
+            [
+                'name' => 'SK HPL',
+                'y' => (int) ($statusDokumen['sk'] ?? 0)
+            ],
+            [
+                'name' => 'Sertifikat',
+                'y' => (int) ($statusDokumen['sertifikat'] ?? 0)
+            ],
+            [
+                'name' => 'Peta',
+                'y' => (int) ($statusDokumen['peta'] ?? 0)
+            ],
         ];
+        $totalHpl = Hpl::count();
 
-        $rekapPeta = (clone $hplQuery)->selectRaw("
-                SUM(CASE WHEN peta = 1 THEN 1 ELSE 0 END) as ada_peta,
-                SUM(CASE WHEN peta = 0 THEN 1 ELSE 0 END) as tidak_ada_peta
-            ")->first();
+        $totalAdaPeta = (clone $hplDokumenQuery)
+            ->where('jenis_dokumen', 'peta')
+            ->distinct('hpl_id')
+            ->count('hpl_id');
 
         $piePetaHpl = [
-            ['name' => 'Ada Peta', 'y' => (int) ($rekapPeta->ada_peta ?? 0)],
-            ['name' => 'Tidak Ada Peta', 'y' => (int) ($rekapPeta->tidak_ada_peta ?? 0)],
+            [
+                'name' => 'Ada Peta',
+                'y' => $totalAdaPeta
+            ],
+            [
+                'name' => 'Tidak Ada Peta',
+                'y' => max($totalHpl - $totalAdaPeta, 0)
+            ],
         ];
-
         /*
         |--------------------------------------------------------------------------
         | 5. DATA UNTUK GRAFIK PERMASALAHAN LAHAN
@@ -191,10 +249,10 @@ class AdminController extends Controller
 
         return view('admin.dashboard', compact(
             'provinsiList', 'provinsiId',
-            'pie', 'pieStatusHpl', 'piePetaHpl',
+            'pie',
             'tahunList', 'dataBidang',
             'totalProvinsi', 'totalKabupaten', 'totalLokasi',
-            'listTahun', 'pieJenisPermasalahan', 'shm'
+            'listTahun', 'pieJenisPermasalahan', 'shm', 'hplDokumenQuery', 'pieStatusHpl', 'piePetaHpl'
         ));
     }
 
@@ -231,13 +289,27 @@ class AdminController extends Controller
     public function getShm()
     {
         $provinsi = Provinsi::all();
-        $shm = Shm::with([
-            'kawasan.desa.kecamatan.kabupaten.provinsi',
-            'dokumen'
-        ])->get();
-        $jenisPermasalahan = JenisPermasalahan::orderBy('nama_permasalahan')->get();
 
-        return view('admin.shm', compact('provinsi', 'shm', 'jenisPermasalahan'));
+        $shm = Shm::with([
+                'kawasan.desa.kecamatan.kabupaten.provinsi',
+                'dokumen'
+            ])
+            ->orderBy('kawasan_transmigrasi_id')
+            ->paginate(10);
+
+        $groupedShm = $shm->getCollection()
+            ->groupBy('kawasan_transmigrasi_id');
+
+        $jenisPermasalahan = JenisPermasalahan::orderBy(
+            'nama_permasalahan'
+        )->get();
+
+        return view('admin.shm', compact(
+            'provinsi',
+            'shm',
+            'groupedShm',
+            'jenisPermasalahan'
+        ));
     }
     public function storeShm(Request $request)
     {
@@ -324,19 +396,42 @@ class AdminController extends Controller
 
                 ]);
 
-                // Upload Dokumen
+                
+                
                 if ($request->hasFile('dokumen')) {
-                    foreach ($request->file('dokumen') as $file) {
 
-                        $path = $file->store('shm_dokumen', 'public');
+                foreach ($request->file('dokumen') as $file) {
 
-                        ShmDokumen::create([
-                            'shm_id'       => $shm->shm_id,
-                            'nama_dokumen' => $file->getClientOriginalName(),
-                            'path_file'    => $path,
-                        ]);
-                    }
+                    // Nama asli tanpa extension
+                    $originalName = pathinfo(
+                        $file->getClientOriginalName(),
+                        PATHINFO_FILENAME
+                    );
+
+                    // Bersihkan nama file
+                    $cleanName = Str::slug($originalName);
+
+                    // Extension file
+                    $extension = $file->getClientOriginalExtension();
+
+                    // Nama file final
+                    $filename = time().'_'.$cleanName.'.'.$extension;
+
+                    // Simpan file ke storage/app/public/shm_dokumen
+                    $path = $file->storeAs(
+                        'shm_dokumen',
+                        $filename,
+                        'public'
+                    );
+
+                    // Simpan ke database
+                    ShmDokumen::create([
+                        'shm_id'       => $shm->shm_id,
+                        'nama_dokumen' => $file->getClientOriginalName(),
+                        'path_file'    => $path,
+                    ]);
                 }
+            }
 
             });
 
@@ -353,6 +448,7 @@ class AdminController extends Controller
 
             throw $e;
         }
+
     }
     public function cekKawasan(Request $request)
     {
@@ -373,11 +469,17 @@ class AdminController extends Controller
 
         foreach ($request->file('dokumen') as $file) {
 
-            $path = $file->store('shm_dokumen', 'public');
+            $filename = time().'_'.$file->getClientOriginalName();
+
+            $path = $file->storeAs(
+                'shm_dokumen',
+                $filename,
+                'public'
+            );
 
             ShmDokumen::create([
                 'shm_id' => $request->shm_id,
-                'nama_dokumen' => $file->getClientOriginalName(),
+                'nama_dokumen' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
                 'path_file' => $path,
             ]);
         }
@@ -404,129 +506,132 @@ class AdminController extends Controller
             'nama_lokasi'    => 'required|string',
             'nama_kecamatan' => 'required|string',
             'nama_desa'      => 'required|string',
-            'pola'           => 'required|string',
 
-            'tahun_patan'    => 'required|array',
-            'tahun_patan.*'  => 'required|numeric',
-            'jumlah_kk'      => 'required|array',
-            'jumlah_kk.*'    => 'required|numeric|min:0',
+            'pola'           => 'required|string',
+            'target_shm'     => 'required|integer|min:0',
+            'realisasi_shm'  => 'required|integer|min:0|lte:target_shm',
+            'clear_shm'      => 'nullable|integer|min:0',
+            'bermasalah_shm' => 'required|integer|min:0',
 
             'status_hpl'     => 'required|in:Serah,Belum',
             'status_upt'     => 'required|in:Serah,Bina',
+
             'luas'           => 'nullable|numeric',
+            'deskripsi'      => 'nullable|string',
+
             'target_tahunan' => 'nullable|integer',
-            'bidang'         => 'required|integer',
-            'target_shm'     => 'required|integer|min:0',
-            'realisasi_shm'  => 'required|integer|min:0',
+            'bidang'         => 'required|integer|min:0',
+
+            'rows' => 'nullable|array',
+            'rows.*.tahun_patan' => 'nullable|integer',
+            'rows.*.jumlah_kk'   => 'nullable|integer|min:0',
         ]);
 
         DB::transaction(function () use ($request, $id) {
 
-            $shmUtama = Shm::findOrFail($id);
+            $shm = Shm::findOrFail($id);
+            $kawasan = $shm->kawasan;
 
-            $tahunList = $request->tahun_patan;
-            $kkList    = $request->jumlah_kk;
-            $shmIds    = $request->shm_id ?? [];
+            // ✅ UPDATE DATA UTAMA
+            $shm->update([
+                'pola'           => $request->pola,
+                'target_shm'     => $request->target_shm,
+                'realisasi_shm'  => $request->realisasi_shm,
+                'sisa_shm'       => max($request->target_shm - $request->realisasi_shm, 0),
+                'clear_shm'      => $request->clear_shm,
+                'bermasalah_shm' => $request->bermasalah_shm,
+                'status_hpl'     => $request->status_hpl,
+                'status_upt'     => $request->status_upt,
+                'luas'           => $request->luas,
+                'target_tahunan' => $request->target_tahunan,
+                'bidang'         => $request->bidang,
+                'deskripsi'      => $request->deskripsi,
+            ]);
 
-            $sisaShm = max($request->target_shm - $request->realisasi_shm, 0);
+            // ✅ LOOP DETAIL
+            if ($request->rows) {
+                foreach ($request->rows as $row) {
 
-            // ==============================
-            // TRACK ID YANG MASIH ADA
-            // ==============================
-            $existingIds = [];
+                    if (empty($row['tahun_patan']) || empty($row['jumlah_kk'])) {
+                        continue;
+                    }
 
-            foreach ($tahunList as $index => $tahun) {
-
-                $kk    = $kkList[$index] ?? 0;
-                $rowId = $shmIds[$index] ?? null;
-
-                $data = [
-                    'pola'            => $request->pola,
-                    'tahun_patan'     => $tahun,
-                    'jumlah_kk'       => $kk,
-                    'status_hpl'      => $request->status_hpl,
-                    'status_upt'      => $request->status_upt,
-                    'luas'            => $request->luas,
-                    'target_tahunan'  => $request->target_tahunan,
-                    'bidang'          => $request->bidang,
-                    'deskripsi'       => $request->deskripsi,
-                    'target_shm'      => $request->target_shm,
-                    'realisasi_shm'   => $request->realisasi_shm,
-                    'sisa_shm'        => $sisaShm,
-                    'clear_shm'   => $request->realisasi_shm,
-                    'realisasi_shm'   => $request->realisasi_shm,
-                    'nama_tipologi'   => $request->tipologi == 'lainnya'
-                                            ? $request->tipologi_manual
-                                            : $request->tipologi,
-                    'tipologi_bidang' => $request->tipologi_bidang,
-                ];
-
-                if ($rowId) {
-
-                    // ✅ UPDATE
-                    Shm::where('shm_id', $rowId)->update($data);
-                    $existingIds[] = $rowId;
-
-                } else {
-
-                    // ✅ CREATE BARU (INI YANG BIKIN BARIS NAMBah)
-                    $new = Shm::create(array_merge($data, [
-                        'kawasan_transmigrasi_id' => $shmUtama->kawasan_transmigrasi_id,
-                    ]));
-
-                    $existingIds[] = $new->shm_id;
+                    if (!empty($row['shm_id'])) {
+                        // UPDATE
+                        Shm::where('shm_id', $row['shm_id'])->update([
+                            'tahun_patan' => $row['tahun_patan'],
+                            'jumlah_kk'   => $row['jumlah_kk'],
+                        ]);
+                    } else {
+                        // INSERT BARU
+                        Shm::create([
+                            'kawasan_transmigrasi_id' => $kawasan->id,
+                            'pola'           => $request->pola,
+                            'tahun_patan'    => $row['tahun_patan'],
+                            'jumlah_kk'      => $row['jumlah_kk'],
+                            'target_shm'     => $request->target_shm,
+                            'realisasi_shm'  => $request->realisasi_shm,
+                            'sisa_shm'       => max($request->target_shm - $request->realisasi_shm, 0),
+                            'clear_shm'      => $request->clear_shm,
+                            'bermasalah_shm' => $request->bermasalah_shm,
+                            'status_hpl'     => $request->status_hpl,
+                            'status_upt'     => $request->status_upt,
+                            'luas'           => $request->luas,
+                            'target_tahunan' => $request->target_tahunan,
+                            'bidang'         => $request->bidang,
+                            'deskripsi'      => $request->deskripsi,
+                        ]);
+                    }
                 }
             }
 
-            // ==============================
-            // DELETE YANG TIDAK ADA DI FORM
-            // ==============================
-            Shm::where('kawasan_transmigrasi_id', $shmUtama->kawasan_transmigrasi_id)
-                ->whereNotIn('shm_id', $existingIds)
-                ->delete();
-
-            // ==============================
             // UPDATE WILAYAH
-            // ==============================
-            $kawasan = $shmUtama->kawasan;
             $kawasan->update([
                 'nama_kawasan' => $request->nama_kawasan,
                 'nama_lokasi'  => $request->nama_lokasi,
             ]);
 
-            $desa = $kawasan->desa;
-            $desa->update([
+            $kawasan->desa->update([
                 'nama_desa' => $request->nama_desa,
             ]);
 
-            $kecamatan = $desa->kecamatan;
-            $kecamatan->update([
+            $kawasan->desa->kecamatan->update([
                 'nama_kecamatan' => $request->nama_kecamatan,
             ]);
         });
 
-        return back()->with('success', 'Data SHM berhasil diperbarui');
+        return back()->with('success', 'Data berhasil diupdate');
     }
 
     public function deleteShm($shm_id)
     {
-        DB::transaction(function () use ($shm_id) {
+        try {
+            DB::transaction(function () use ($shm_id) {
+                // 1. Cari data SHM beserta dokumennya
+                $shm = Shm::with('dokumen')->findOrFail($shm_id);
 
-            $shm = Shm::with('dokumen')->findOrFail($shm_id);
-
-            /** ================= HAPUS FILE DOKUMEN ================= */
-            foreach ($shm->dokumen as $dokumen) {
-                if (Storage::disk('public')->exists($dokumen->path_file)) {
-                    Storage::disk('public')->delete($dokumen->path_file);
+                /** ================= HAPUS FILE FISIK ================= */
+                foreach ($shm->dokumen as $dokumen) {
+                    // Pastikan path tidak kosong dan file ada di storage
+                    if (!empty($dokumen->path_file) && Storage::disk('public')->exists($dokumen->path_file)) {
+                        Storage::disk('public')->delete($dokumen->path_file);
+                    }
                 }
-            }
 
-            /** ================= HAPUS DATA ================= */
-            $shm->dokumen()->delete(); // tabel shm_dokumen
-            $shm->delete();            // tabel shm
-        });
+                /** ================= HAPUS DATA DI DATABASE ================= */
+                // Hapus anak (dokumen) terlebih dahulu
+                $shm->dokumen()->delete(); 
 
-        return redirect()->back()->with('success', 'Data SHM berhasil dihapus');
+                // Hapus data utama (SHM)
+                $shm->delete(); 
+            });
+
+            return redirect()->back()->with('success', 'Data SHM dan dokumen lampiran berhasil dihapus.');
+
+        } catch (\Exception $e) {
+            // Jika terjadi error (misal file gagal dihapus atau db error)
+            return redirect()->back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
+        }
     }
     
     public function updateDokumenShm(Request $request, $id)
@@ -571,10 +676,12 @@ class AdminController extends Controller
     {
         $dok = ShmDokumen::findOrFail($id);
 
-        if ($dok->path_file) {
+        // hapus file fisik
+        if ($dok->path_file && Storage::disk('public')->exists($dok->path_file)) {
             Storage::disk('public')->delete($dok->path_file);
         }
 
+        // hapus database
         $dok->delete();
 
         return back()->with('success', 'Dokumen berhasil dihapus');
@@ -608,7 +715,7 @@ class AdminController extends Controller
             'no_sk_hpl' => 'nullable|string|max:500',
             'tgl_hpl' => 'nullable|date',
             'luas_sk' => 'required|numeric',
-            'sisa_luas' => 'nullable|numeric',
+            
             'no_sertifikat.*' => 'nullable|string|max:255', // 🔥 array
             'peta' => 'nullable|in:0,1',
             'file_peta' => 'nullable|file|mimes:pdf,jpg,jpeg,png,zip|max:10240',
@@ -648,10 +755,6 @@ class AdminController extends Controller
 
             // 🔥 ambil list sertifikat
             $sertifikatList = array_filter($request->no_sertifikat ?? []);
-
-            // =====================================================
-            // 🔥 LOOP INSERT HPL
-            // =====================================================
 
             if (empty($sertifikatList)) {
 
@@ -711,16 +814,34 @@ class AdminController extends Controller
             $request->validate([
                 'hpl_id' => 'required|exists:hpl,hpl_id',
                 'dokumen' => 'required',
-                'dokumen.*' => 'file|mimes:pdf,jpg,jpeg,png|max:5120'
+                'jenis_dokumen' => 'nullable|in:sk,sertifikat,peta',
+                'nomor' => 'nullable|numeric',
+                'tanggal' => 'nullable|date',
+                'luas' => 'nullable|numeric',
+                'dokumen_file.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                'dokumen_detail.*.jenis' => 'nullable|string',
+                'dokumen_detail.*.nomor' => 'nullable|string',
+                'dokumen_detail.*.tanggal' => 'nullable|date',
+                'dokumen_detail.*.luas' => 'nullable|numeric',
             ]);
         }
 
-        if ($request->hasFile('dokumen')) {
-            foreach ($request->file('dokumen') as $file) {
+        if ($request->hasFile('dokumen_file')) {
+
+            foreach ($request->dokumen_file as $i => $file) {
+
+                if (!$file) continue;
+
                 $path = $file->store('hpl_dokumen', 'public');
+
+                $detail = $request->dokumen_detail[$i] ?? null;
 
                 HplDokumen::create([
                     'hpl_id' => $targetHplId,
+                    'jenis_dokumen' => $detail['jenis'] ?? null,
+                    'nomor' => $detail['nomor'] ?? null,
+                    'tanggal' => $detail['tanggal'] ?? null,
+                    'luas' => $detail['luas'] ?? null,
                     'nama_dokumen' => $file->getClientOriginalName(),
                     'path_file' => $path,
                 ]);
@@ -731,6 +852,40 @@ class AdminController extends Controller
         if (!$hplId) {
             return back()->with('success', 'Dokumen berhasil ditambahkan');
         }
+    }
+
+    public function storeDokumenTambahan(Request $request)
+    {
+        $request->validate([
+            'hpl_id' => 'required|exists:hpl,hpl_id',
+            'nama_dokumen' => 'required|string|max:255',
+            'dokumen_file.*' => 'required|mimes:pdf|max:5120',
+        ]);
+
+        if ($request->hasFile('dokumen_file')) {
+
+            foreach ($request->file('dokumen_file') as $file) {
+
+                $filename = time() . '_' . $file->getClientOriginalName();
+
+                $path = $file->storeAs(
+                    'hpl_dokumen',
+                    $filename,
+                    'public'
+                );
+
+                HplDokumen::create([
+                    'hpl_id' => $request->hpl_id,
+                    'nama_dokumen' => $request->nama_dokumen,
+                    'path_file' => $path,
+                ]);
+            }
+        }
+
+        return back()->with(
+            'success',
+            'Dokumen berhasil ditambahkan'
+        );
     }
     public function checkKawasan(Request $request)
     {
@@ -753,86 +908,46 @@ class AdminController extends Controller
     public function updateHpl(Request $request, $id)
     {
         $request->validate([
-            'nama_kawasan'     => 'required|string',
-            'nama_desa'        => 'required|string',
-            'status_hpl'       => 'required|in:sk,sertifikat,usulan',
-            'no_sk_hpl'        => 'nullable|string|max:500',
-            'tgl_hpl'          => 'nullable|date',
-            'luas_sk'          => 'nullable|numeric',
-            'sisa_luas'        => 'nullable|numeric',
-            'no_sertifikat'    => 'nullable|array',
-            'no_sertifikat.*'  => 'nullable|string|max:255',
+            'nama_kecamatan' => 'required|string|max:255',
+            'nama_desa' => 'required|string|max:255',
+            'nama_kawasan' => 'required|string|max:255',
+            'nama_lokasi' => 'required|string|max:255',
+
+            'status_hpl' => 'required|in:sk,sertifikat,usulan',
+            'lokasi_kawasan' => 'required|in:didalam,diluar',
+
+            'no_sk_hpl' => 'nullable|string|max:500',
+            'tgl_hpl' => 'nullable|date',
+            'luas_sk' => 'nullable|numeric', // 🔥 FIX
+
+            'dokumen_file.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+
+            'dokumen_detail' => 'nullable|array',
+            'dokumen_detail.*.jenis' => 'nullable|in:sk,sertifikat,peta',
+            'dokumen_detail.*.nomor' => 'nullable|string|max:255',
+            'dokumen_detail.*.tanggal' => 'nullable|date',
+            'dokumen_detail.*.luas' => 'nullable|numeric',
         ]);
 
         DB::transaction(function () use ($request, $id) {
 
             $hpl = Hpl::findOrFail($id);
-            $kawasanId = $hpl->kawasan_transmigrasi_id;
 
-            // ================= UPDATE DATA UMUM KE SEMUA BARIS =================
-            Hpl::where('kawasan_transmigrasi_id', $kawasanId)
-                ->update([
-                    'status_hpl' => $request->status_hpl,
-                    'no_sk_hpl'  => $request->status_hpl === 'usulan' ? null : $request->no_sk_hpl,
-                    'tgl_hpl'    => $request->status_hpl === 'usulan' ? null : $request->tgl_hpl,
-                    'luas_sk'    => $request->status_hpl === 'usulan' ? null : $request->luas_sk,
-                    'sisa_luas'  => $request->status_hpl === 'usulan' ? null : $request->sisa_luas,
-                ]);
+            // ================= HPL =================
+            $hpl->update([
+                'status_hpl' => $request->status_hpl,
+                'lokasi_kawasan' => $request->lokasi_kawasan,
+                'no_sk_hpl'  => $request->status_hpl === 'usulan' ? null : $request->no_sk_hpl,
+                'tgl_hpl'    => $request->status_hpl === 'usulan' ? null : $request->tgl_hpl,
+                'luas_sk'    => $request->status_hpl === 'usulan' ? null : $request->luas_sk,
+            ]);
 
-            // ================= SINKRONISASI SERTIFIKAT =================
-            $old = Hpl::where('kawasan_transmigrasi_id', $kawasanId)
-                        ->pluck('no_sertifikat')
-                        ->filter()
-                        ->toArray();
-
-            $new = collect($request->no_sertifikat)
-                        ->filter()
-                        ->values()
-                        ->toArray();
-
-            // Hapus yang tidak ada lagi di form
-            $deleteSertifikat = array_diff($old, $new);
-
-            if (!empty($deleteSertifikat)) {
-                // 1. Ambil ID HPL yang akan dihapus
-                $hplIdsToDelete = Hpl::where('kawasan_transmigrasi_id', $kawasanId)
-                    ->whereIn('no_sertifikat', $deleteSertifikat)
-                    ->pluck('hpl_id');
-
-                // 2. Hapus dokumen fisik dan datanya terlebih dahulu (Anak)
-                foreach ($hplIdsToDelete as $idHpl) {
-                    $dokumens = HplDokumen::where('hpl_id', $idHpl)->get();
-                    foreach ($dokumens as $dok) {
-                        if (Storage::disk('public')->exists($dok->path_file)) {
-                            Storage::disk('public')->delete($dok->path_file);
-                        }
-                        $dok->delete();
-                    }
-                }
-
-                // 3. Baru hapus data HPL-nya (Induk)
-                Hpl::whereIn('hpl_id', $hplIdsToDelete)->delete();
-            }
-
-            // Tambah yang baru
-            $insert = array_diff($new, $old);
-
-            foreach ($insert as $no) {
-                Hpl::create([
-                    'kawasan_transmigrasi_id' => $kawasanId,
-                    'status_hpl' => $request->status_hpl,
-                    'lokasi_kawasan' => $hpl->lokasi_kawasan,
-                    'no_sk_hpl' => $request->no_sk_hpl,
-                    'tgl_hpl' => $request->tgl_hpl,
-                    'luas_sk' => $request->luas_sk,
-                    'sisa_luas' => $request->sisa_luas,
-                    'no_sertifikat' => $no,
-                ]);
-            }
-
-            // ================= UPDATE DATA KAWASAN =================
+            // ================= RELASI WILAYAH =================
             $kawasan = $hpl->kawasan;
 
+            $kawasan->update([
+                'nama_lokasi' => $request->nama_lokasi,
+            ]);
             $kawasan->update([
                 'nama_kawasan' => $request->nama_kawasan,
             ]);
@@ -840,6 +955,66 @@ class AdminController extends Controller
             $kawasan->desa->update([
                 'nama_desa' => $request->nama_desa,
             ]);
+
+            // 🔥 FIX penting (tadi belum ada)
+            $kawasan->desa->kecamatan->update([
+                'nama_kecamatan' => $request->nama_kecamatan,
+            ]);
+
+            // ================= DOKUMEN =================
+            $existingIds = [];
+
+            if ($request->dokumen_detail) {
+                foreach ($request->dokumen_detail as $i => $dok) {
+
+                    $data = [
+                        'jenis_dokumen' => $dok['jenis'] ?? null,
+                        'nomor' => $dok['nomor'] ?? null,
+                        'tanggal' => $dok['tanggal'] ?? null,
+                        'luas' => $dok['luas'] ?? null,
+                    ];
+
+                    if ($request->hasFile("dokumen_file.$i")) {
+
+                        $file = $request->file("dokumen_file.$i");
+                        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+
+                        if (!empty($dok['id'])) {
+                            $old = HplDokumen::find($dok['id']);
+                            if ($old && $old->path_file && Storage::disk('public')->exists($old->path_file)) {
+                                Storage::disk('public')->delete($old->path_file);
+                            }
+                        }
+
+                        $data['path_file'] = $file->store('hpl_dokumen', 'public');
+                        $data['nama_dokumen'] = $originalName; // 🔥 FIX
+                    }
+
+                    // fallback kalau tidak upload file
+                    if (!isset($data['nama_dokumen'])) {
+                        $data['nama_dokumen'] = $dok['nomor'] ?? 'Dokumen';
+                    }
+
+                    $doc = HplDokumen::updateOrCreate(
+                        ['id' => $dok['id'] ?? null],
+                        array_merge($data, ['hpl_id' => $id])
+                    );
+
+                    $existingIds[] = $doc->id;
+                }
+            }
+
+            // ================= DELETE YANG DIHAPUS =================
+            $toDelete = HplDokumen::where('hpl_id', $id)
+                ->whereNotIn('id', $existingIds)
+                ->get();
+
+            foreach ($toDelete as $doc) {
+                if ($doc->path_file && Storage::disk('public')->exists($doc->path_file)) {
+                    Storage::disk('public')->delete($doc->path_file);
+                }
+                $doc->delete();
+            }
         });
 
         return back()->with('success', 'Data HPL berhasil diperbarui');
@@ -874,28 +1049,23 @@ class AdminController extends Controller
 
         $dok = HplDokumen::findOrFail($id);
 
+        // selalu update nama dari input user
+        $dok->nama_dokumen = $request->nama_dokumen;
+
         if ($request->hasFile('dokumen')) {
-            // 1. Hapus file lama jika ada
-            if ($dok->path_file) {
+
+            // hapus file lama
+            if ($dok->path_file && Storage::disk('public')->exists($dok->path_file)) {
                 Storage::disk('public')->delete($dok->path_file);
             }
 
             $file = $request->file('dokumen');
-            // Ambil nama asli file tanpa extension untuk disimpan sebagai nama_dokumen
-            $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-            
-            $filename = time().'_'.$file->getClientOriginalName();
+
+            $filename = time() . '_' . $file->getClientOriginalName();
+
             $path = $file->storeAs('hpl_dokumen', $filename, 'public');
 
-            // 2. Update path file
             $dok->path_file = $path;
-            
-            // 3. Update nama_dokumen otomatis dari file (Opsional)
-            // Hapus baris ini jika kamu ingin tetap menggunakan input manual dari user
-            $dok->nama_dokumen = $originalName; 
-        } else {
-            // Jika tidak upload file baru, gunakan input manual dari field 'nama_dokumen'
-            $dok->nama_dokumen = $request->nama_dokumen;
         }
 
         $dok->save();
@@ -1170,27 +1340,26 @@ class AdminController extends Controller
 
             /** ================= UPDATE / CREATE PROGRESS ================= */
 
-            PlProgress::updateOrCreate(
+            $allPermasalahan = PermasalahanLahan::where(
+                'kawasan_transmigrasi_id',
+                $pl->kawasan_transmigrasi_id
+            )->get();
 
-                ['pl_id' => $pl->pl_id],
+            foreach ($allPermasalahan as $per) {
 
-                [
-
-                    'tahun' => $request->tahun,
-
-                    'jumlah_kasus' => $request->jumlah_kasus,
-
-                    'status_penanganan' => $request->status_penanganan,
-
-                    'tindak_lanjut' => $request->tindak_lanjut,
-
-                    'rekomendasi' => $request->rekomendasi,
-
-                ]
-
-            );
-
-
+                PlProgress::updateOrCreate(
+                    [
+                        'pl_id' => $per->pl_id
+                    ],
+                    [
+                        'tahun' => $request->tahun,
+                        'jumlah_kasus' => $request->jumlah_kasus,
+                        'status_penanganan' => $request->status_penanganan,
+                        'tindak_lanjut' => $request->tindak_lanjut,
+                        'rekomendasi' => $request->rekomendasi,
+                    ]
+                );
+            }
 
             /** ================= UPLOAD DOKUMEN ================= */
 

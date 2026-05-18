@@ -13,28 +13,24 @@
     @vite('resources/css/app.css') 
     
 </head>
-<body class="bg-slate-100 min-h-screen">
+<body class="bg-slate-50 min-h-screen">
     <div class="p-4 pt-20 space-y-10">
         <div class="items-center justify-between lg:flex">
             <div class="p-2 w-full">
 
                 <div class="flex flex-col md:flex-row items-start justify-between space-y-3 md:space-y-0 md:space-x-4 p-4">
 
-                    <h2 class="text-2xl font-bold text-gray-700 mt-2">
-                        Sertifikat Hak Milik
+                    <h2 class="text-2xl font-bold text-slate-800 tracking-tight">
+                        Manajemen <span class="text-blue-600">Sertifikat Hak Milik</span>
                     </h2>
 
                     <div class="flex flex-col sm:flex-row gap-3">
-
                         <button
                             data-modal-target="tambah-modal"
                             data-modal-toggle="tambah-modal"
-                            class="px-5 py-2.5 text-sm font-medium text-white
-                                bg-blue-600 rounded-lg shadow-sm
-                                hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300
-                                transition">
+                            class="flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-none transition-all duration-300">
+                            
                             Tambah SHM
-                        </button>
                     </div>
                 </div>
                 <div class="mt-2 bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
@@ -66,10 +62,16 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y">
-                                @forelse ($shm as $index => $item)
+                                @forelse ($groupedShm as $index => $group)
+                                @php
+                                    $item = $group->first();
+
+                                    $totalKK = $group->sum('jumlah_kk');
+            
+                                @endphp
                                 <tr class="hover:bg-gray-50">
 
-                                    <td class="px-4 py-2 text-center">{{ $index + 1 }}</td>
+                                    <td class="px-4 py-2 text-center">{{ $shm->firstItem() + $loop->index }}</td>
 
                                     <td class="px-4 py-2 text-center">
                                         {{ $item->kawasan?->desa?->kecamatan?->kabupaten?->provinsi?->nama_provinsi ?? '-' }}
@@ -92,7 +94,7 @@
 
                                     
                                     <td class="px-4 py-2 text-center">
-                                        {{ $item->jumlah_kk ?? '-' }} 
+                                        {{ $totalKK }}
                                     </td>
 
                                     <td class="px-4 py-3 text-center">
@@ -115,16 +117,59 @@
 
 
                                     <td class="px-4 py-2 text-center">
-                                        @if($item->dokumen->count() > 0)
-                                            <button onclick="openDokumenModal({{ $item->shm_id }})" class="text-blue-600 underline font-medium">
-                                                {{ $item->dokumen->count() }} Dokumen
+
+                                        @php
+                                            $totalDok = $item->dokumen->count();
+                                        @endphp
+
+                                        @if($totalDok > 0)
+
+                                            <button
+                                                onclick="openDokumenModal({{ $item->shm_id }})"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all font-bold text-xs shadow-md
+                                                {{ $totalDok > 0
+                                                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100'
+                                                    : 'bg-slate-100 text-slate-400 hover:bg-slate-200 shadow-none border border-slate-200'
+                                                }}">
+
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="h-4 w-4"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor">
+
+                                                    <path stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                                </svg>
+
+                                                {{ $totalDok }} File
                                             </button>
+
                                         @else
-                                            <button onclick="openTambahDokumen({{ $item->shm_id }})" 
-                                                    class="text-sm px-3 py-1 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100">
-                                                + Tambah
+
+                                            <button
+                                                onclick="openTambahDokumen({{ $item->shm_id }})"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-400 hover:bg-slate-200 shadow-none border border-slate-200 transition-all font-bold text-xs">
+
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="h-4 w-4"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor">
+
+                                                    <path stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M12 4v16m8-8H4" />
+                                                </svg>
+
+                                                Tambah
                                             </button>
+
                                         @endif
+
                                     </td>
 
 
@@ -134,46 +179,26 @@
                                             {{-- DETAIL --}}
                                             <button data-modal-target="detail-modal-{{ $item->shm_id }}"
                                                 data-modal-toggle="detail-modal-{{ $item->shm_id }}"
-                                                class="text-blue-600 hover:text-blue-800"
+                                                class="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
                                                 title="Detail">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
-                                                    viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7
-                                                        -1.274 4.057-5.064 7-9.542 7
-                                                        -4.477 0-8.268-2.943-9.542-7z"/>
-                                                </svg>
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             </button>
 
                                             {{-- EDIT --}}
                                             <button data-modal-target="edit-modal-{{ $item->shm_id }}"
                                                 data-modal-toggle="edit-modal-{{ $item->shm_id }}"
-                                            class="text-yellow-600 hover:text-yellow-800"
+                                            class="p-2 text-amber-600 bg-amber-50 rounded-lg hover:bg-amber-600 hover:text-white transition-all"
                                             title="Edit">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
-                                                    viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                                </svg>
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                             </button>
 
                                             {{-- DELETE --}}
                                             <button data-modal-target="delete-modal-{{ $item->shm_id }}"
                                                 data-modal-toggle="delete-modal-{{ $item->shm_id }}"
                                                 method="POST"
-                                                    class="text-red-600 hover:text-red-800"
+                                                   class="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-600 hover:text-white transition-all" 
                                                     title="Hapus">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
-                                                        viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862
-                                                            a2 2 0 01-1.995-1.858L5 7m5-4h4
-                                                            a1 1 0 011 1v3H9V4a1 1 0 011-1z"/>
-                                                    </svg>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4a1 1 0 011 1v3H9V4a1 1 0 011-1z"/></svg>
                                             </button>
 
                                         </div>
@@ -352,62 +377,62 @@
                                         </div>
                                     </div>
 
-                                    <div id="detail-modal-{{ $item->shm_id }}" tabindex="-1"
-                                        class="fixed inset-0 z-50 hidden bg-black/50 flex items-start justify-center overflow-y-auto">
-
-                                        <div class="bg-white rounded-xl shadow-xl mb-10 w-[90%] max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
+                                    <div id="detail-modal-{{ $item->shm_id }}" class="fixed inset-0 z-50 hidden pt-6 bg-black/50 flex items-center justify-center overflow-y-auto">
+    
+                                        <div class="bg-white rounded-xl shadow-xl w-[90%] max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
 
                                             {{-- HEADER --}}
-                                            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
-                                                <h3 class="text-lg font-semibold text-white">
-                                                    Detail Sertifikat Hak Milik (SHM)
-                                                </h3>
-                                                <p class="text-sm text-white font-bold">
-                                                    {{ $item->kawasan->nama_kawasan }}
-                                                </p>
+                                            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 shrink-0 flex justify-between items-center">
+                                                <div>
+                                                    <h3 class="text-lg font-bold text-black">Detail Sertifikat Hak Milik (SHM)</h3>
+                                                    <p class="text-sm text-blue-700 mt-0.5">{{ $item->kawasan->nama_kawasan }}</p>
+                                                </div>
+                                                <button onclick="closeModal('detail-modal-{{ $item->shm_id }}')" class="text-white hover:text-gray-200 p-2">
+                                                    ✕
+                                                </button>
                                             </div>
 
-                                            {{-- CONTENT --}}
-                                            <div class="p-6 space-y-6 text-sm text-gray-700 overflow-y-auto flex-1">
+                                            {{-- BODY --}}
+                                            <div class="p-6 overflow-y-auto max-h-[70vh] space-y-6 text-sm text-gray-700 bg-slate-50">
 
                                                 {{-- ================= WILAYAH ================= --}}
-                                                <div>
-                                                    <h4 class="font-semibold text-gray-800 mb-3 border-b pb-1">
-                                                        Informasi Wilayah
-                                                    </h4>
+                                                <div class="bg-white border rounded-xl p-5 shadow-sm">
+                                                    <h4 class="font-semibold text-gray-800 mb-4 border-b pb-2">Informasi Wilayah</h4>
 
-                                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                                        <div class="bg-gray-50 rounded-lg p-3">
-                                                            <p class="text-xs text-gray-500">Provinsi</p>
-                                                            <p class="font-medium">
+                                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                        <div class="bg-gray-50 rounded-lg p-4 border">
+                                                            <p class="text-xs text-gray-500 mb-1">Provinsi</p>
+                                                            <p class="font-semibold">
                                                                 {{ $item->kawasan?->desa?->kecamatan?->kabupaten?->provinsi?->nama_provinsi ?? '-' }}
                                                             </p>
                                                         </div>
 
-                                                        <div class="bg-gray-50 rounded-lg p-3">
-                                                            <p class="text-xs text-gray-500">Kabupaten</p>
-                                                            <p class="font-medium">
+                                                        <div class="bg-gray-50 rounded-lg p-4 border">
+                                                            <p class="text-xs text-gray-500 mb-1">Kabupaten</p>
+                                                            <p class="font-semibold">
                                                                 {{ $item->kawasan?->desa?->kecamatan?->kabupaten?->nama_kabupaten ?? '-' }}
                                                             </p>
                                                         </div>
 
-                                                        <div class="bg-gray-50 rounded-lg p-3">
-                                                            <p class="text-xs text-gray-500">Kecamatan</p>
-                                                            <p class="font-medium">
+                                                        <div class="bg-gray-50 rounded-lg p-4 border">
+                                                            <p class="text-xs text-gray-500 mb-1">Kecamatan</p>
+                                                            <p class="font-semibold">
                                                                 {{ $item->kawasan?->desa?->kecamatan?->nama_kecamatan ?? '-' }}
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <div class="grid grid-cols-2 md:grid-cols-2 gap-4 mt-4">
-                                                        <div class="bg-gray-50 rounded-lg p-3">
-                                                            <p class="text-xs text-gray-500">Desa</p>
-                                                            <p class="font-medium">
+
+                                                    <div class="grid grid-cols-2 gap-4 mt-4">
+                                                        <div class="bg-gray-50 rounded-lg p-4 border">
+                                                            <p class="text-xs text-gray-500 mb-1">Desa</p>
+                                                            <p class="font-semibold">
                                                                 {{ $item->kawasan?->desa?->nama_desa ?? '-' }}
                                                             </p>
                                                         </div>
-                                                        <div class="bg-gray-50 rounded-lg p-3">
-                                                            <p class="text-xs text-gray-500">Lokasi</p>
-                                                            <p class="font-medium">
+
+                                                        <div class="bg-gray-50 rounded-lg p-4 border">
+                                                            <p class="text-xs text-gray-500 mb-1">Lokasi</p>
+                                                            <p class="font-semibold">
                                                                 {{ $item->kawasan?->nama_lokasi ?? '-' }}
                                                             </p>
                                                         </div>
@@ -415,366 +440,115 @@
                                                 </div>
 
                                                 {{-- ================= DATA SHM ================= --}}
-                                                <div>
-                                                    <h4 class="font-semibold text-gray-800 mb-3 border-b pb-1">
-                                                        Data SHM
-                                                    </h4>
+                                                <div class="bg-white border rounded-xl p-5 shadow-sm">
+                                                    <h4 class="font-semibold text-gray-800 mb-4 border-b pb-2">Data SHM</h4>
 
-                                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                                        <div class="bg-gray-50 rounded-lg p-3">
+                                                    <div class="grid md:grid-cols-4 gap-4">
+                                                        <div class="bg-gray-50 rounded-lg p-4 border">
                                                             <p class="text-xs text-gray-500">Pola</p>
-                                                            <p class="font-semibold">{{ $item->pola }}</p>
+                                                            <p class="font-bold text-gray-900">{{ $item->pola }}</p>
                                                         </div>
 
-                                                        <div class="bg-gray-50 rounded-lg p-3">
-                                                            <p class="text-xs text-gray-500">Tahun Patan</p>
-                                                            <p class="font-semibold">{{ $item->tahun_patan }}</p>
-                                                        </div>
-
-                                                        <div class="bg-gray-50 rounded-lg p-3">
-                                                            <p class="text-xs text-gray-500">Jumlah KK</p>
-                                                            <p class="font-semibold">{{ $item->jumlah_kk }}</p>
-                                                        </div>
-                                                        <div class="bg-gray-50 rounded-lg p-3">
+                            
+                                                        <div class="bg-gray-50 rounded-lg p-4 border">
                                                             <p class="text-xs text-gray-500">Status HPL</p>
-                                                            <p class="font-semibold">{{ $item->status_hpl }}</p>
+                                                            <p class="font-bold text-blue-700 uppercase">{{ $item->status_hpl }}</p>
                                                         </div>
-                                                        <div class="bg-gray-50 rounded-lg p-3">
+
+                                                        <div class="bg-gray-50 rounded-lg p-4 border">
                                                             <p class="text-xs text-gray-500">Status UPT</p>
-                                                            <p class="font-semibold">{{ $item->status_upt }}</p>
+                                                            <p class="font-bold">{{ $item->status_upt }}</p>
                                                         </div>
-                                                        <div class="bg-gray-50 rounded-lg p-3">
+
+                                                        <div class="bg-gray-50 rounded-lg p-4 border">
                                                             <p class="text-xs text-gray-500">Luas</p>
-                                                            <p class="font-semibold">{{ $item->luas }}</p>
+                                                            <p class="font-bold">{{ $item->luas }}</p>
                                                         </div>
-                                                        <div class="bg-gray-50 rounded-lg p-3">
-                                                            <p class="text-xs text-gray-500">Target SHM</p>
-                                                            <p class="font-semibold">{{ $item->target_shm }}</p>
-                                                        </div>
-                                                        <div class="bg-gray-50 rounded-lg p-3">
-                                                            <p class="text-xs text-gray-500">Sudah SHM</p>
-                                                            <p class="font-semibold">{{ $item->realisasi_shm }}</p>
-                                                        </div>
-                                                        <div class="bg-gray-50 rounded-lg p-3">
-                                                            <p class="text-xs text-gray-500">Belum SHM</p>
-                                                            <p class="font-semibold">{{ $item->sisa_shm }}</p>
-                                                        </div>
-                                                        
                                                     </div>
                                                 </div>
-                                                <div class="grid grid-cols-2 md:grid-cols-2 gap-4">
-                                                    <div class="bg-gray-50 rounded-lg p-3">
-                                                        <p class="text-xs text-gray-500">Clear SHM</p>
-                                                        <p class="font-semibold">{{ $item->clear_shm }}</p>
-                                                    </div>
-                                                    <div class="bg-gray-50 rounded-lg p-3">
-                                                        <p class="text-xs text-gray-500">Bermasalah SHM</p>
-                                                        <p class="font-semibold">{{ $item->bermasalah_shm }}</p>
-                                                    </div>
-                                                    <div class="bg-gray-50 rounded-lg p-3">
-                                                        <p class="text-xs text-gray-500">Target Tahunan</p>
-                                                        <p class="font-semibold">{{ $item->target_tahunan }}</p>
-                                                    </div>
-                                                    <div class="bg-gray-50 rounded-lg p-3">
-                                                        <p class="text-xs text-gray-500">Bidang</p>
-                                                        <p class="font-semibold">{{ $item->bidang }}</p>
+
+                                                <div class="bg-gray-50 rounded-lg p-4 border">
+                                                    <p class="text-xs text-gray-500 mb-3">Tahun Patan & Jumlah KK</p>
+
+                                                    <div class="grid grid-cols-2 gap-2">
+                                                        @foreach($group as $row)
+                                                            <div class="bg-white border rounded-lg p-2 text-center shadow-sm">
+                                                                <p class="text-xs text-gray-500">{{ $row->tahun_patan }}</p>
+                                                                <p class="font-bold text-blue-600">{{ $row->jumlah_kk }} KK</p>
+                                                            </div>
+                                                        @endforeach
                                                     </div>
                                                 </div>
-                                                
-                                                <div class="bg-gray-50 rounded-lg p-3 mt-2">
-                                                    <p class="text-xs text-gray-500">Deskripsi</p>
-                                                    <p class="font-semibold">
-                                                        {{ $item->deskripsi }}
-                                                    </p>
+
+                                                {{-- ================= PROGRESS SHM ================= --}}
+                                                <div class="bg-white border rounded-xl p-5 shadow-sm">
+                                                    <h4 class="font-semibold text-gray-800 mb-4 border-b pb-2">Progress SHM</h4>
+
+                                                    <div class="grid md:grid-cols-3 gap-4">
+                                                        <div class="bg-green-50 rounded-lg p-4 border border-green-200">
+                                                            <p class="text-xs text-green-600">Sudah SHM</p>
+                                                            <p class="font-bold text-green-700 text-lg">{{ $item->realisasi_shm }}</p>
+                                                        </div>
+
+                                                        <div class="bg-red-50 rounded-lg p-4 border border-red-200">
+                                                            <p class="text-xs text-red-600">Belum SHM</p>
+                                                            <p class="font-bold text-red-700 text-lg">{{ $item->sisa_shm }}</p>
+                                                        </div>
+
+                                                        <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                                                            <p class="text-xs text-blue-600">Target SHM</p>
+                                                            <p class="font-bold text-blue-700 text-lg">{{ $item->target_shm }}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {{-- ================= RINCIAN TAMBAHAN ================= --}}
+                                                <div class="bg-white border rounded-xl p-5 shadow-sm">
+                                                    <h4 class="font-semibold text-gray-800 mb-4 border-b pb-2">Rincian Tambahan</h4>
+
+                                                    <div class="grid md:grid-cols-2 gap-4">
+                                                        <div class="bg-gray-50 rounded-lg p-4 border">
+                                                            <p class="text-xs text-gray-500">Clear SHM</p>
+                                                            <p class="font-bold">{{ $item->clear_shm }}</p>
+                                                        </div>
+
+                                                        <div class="bg-gray-50 rounded-lg p-4 border">
+                                                            <p class="text-xs text-gray-500">Bermasalah SHM</p>
+                                                            <p class="font-bold">{{ $item->bermasalah_shm }}</p>
+                                                        </div>
+
+                                                        <div class="bg-gray-50 rounded-lg p-4 border">
+                                                            <p class="text-xs text-gray-500">Target Tahunan</p>
+                                                            <p class="font-bold">{{ $item->target_tahunan }}</p>
+                                                        </div>
+
+                                                        <div class="bg-gray-50 rounded-lg p-4 border">
+                                                            <p class="text-xs text-gray-500">Bidang</p>
+                                                            <p class="font-bold">{{ $item->bidang }}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {{-- ================= DESKRIPSI ================= --}}
+                                                <div class="bg-white border rounded-xl p-5 shadow-sm">
+                                                    <h4 class="font-semibold text-gray-800 mb-4 border-b pb-2">Deskripsi</h4>
+
+                                                    <div class="bg-gray-50 rounded-lg p-4 border">
+                                                        <p class="text-gray-700 leading-relaxed">
+                                                            {{ $item->deskripsi ?? 'Tidak ada deskripsi.' }}
+                                                        </p>
+                                                    </div>
                                                 </div>
 
                                             </div>
 
                                             {{-- FOOTER --}}
-                                            <div class="bg-white px-6 py-4 flex justify-end">
-                                                <button
-                                                    data-modal-hide="detail-modal-{{ $item->shm_id }}"
-                                                    class="px-6 py-2.5 text-sm font-semibold text-white bg-slate-800 rounded-lg hover:bg-slate-900 transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-slate-200 active:scale-95">
-                                                    Tutup
-                                                </button>
-                                            </div>
+                                            <div class="bg-white px-6 py-4 flex justify-end"> 
+                                                <button data-modal-hide="detail-modal-{{ $item->shm_id }}" class="px-6 py-2.5 text-sm font-semibold text-white bg-slate-800 rounded-lg hover:bg-slate-900 transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-slate-200 active:scale-95"> Tutup </button>
+                                             </div> 
                                         </div>
                                     </div>
-                                    <div id="edit-modal-{{ $item->shm_id }}" tabindex="-1"
-                                        class="fixed inset-0 z-50 hidden bg-black/50 flex items-start justify-center overflow-y-auto">
-
-                                        <div class="relative mx-auto mt-10 mb-10 w-[90%] max-w-3xl">
-                                            <div class="bg-white rounded-xl shadow-xl p-6 max-h-[85vh] overflow-y-auto">
-
-                                                <h3 class="text-lg font-semibold mb-4">
-                                                    Edit SHM
-                                                </h3>
-
-                                                <form action="{{ route('updateShm', $item->shm_id) }}" method="POST">
-                                                    @csrf
-                                                    @method('PUT')
-
-                                                    <div class="border border-gray-200 rounded-lg p-4 mb-6">
-                                                        <h3 class="text-md font-semibold text-gray-700 mb-3">
-                                                            Data Wilayah
-                                                        </h3>
-
-                                                        <div class="grid grid-cols-2 gap-4">
-                                                            <div>
-                                                                <label class="block text-sm font-medium">Provinsi</label>
-
-                                                                <select class="w-full border rounded-lg px-3 py-2 bg-gray-100" disabled>
-                                                                    <option>
-                                                                        {{ $item->kawasan?->desa?->kecamatan?->kabupaten?->provinsi?->nama_provinsi ?? '-' }}
-                                                                    </option>
-                                                                </select>
-                                                                
-                                                            </div>
-
-                                                            <div>
-                                                                <label class="block text-sm font-medium">Kabupaten</label>
-
-                                                                <select class="w-full border rounded-lg px-3 py-2 bg-gray-100" disabled>
-                                                                    <option>
-                                                                        {{ $item->kawasan?->desa?->kecamatan?->kabupaten?->nama_kabupaten ?? '-' }}
-                                                                    </option>
-                                                                </select>
-                                                            </div>
-
-                                                            <div>
-                                                                <label class="block text-sm font-medium">Kecamatan</label>
-                                                                <input type="text" name="nama_kecamatan"
-                                                                     value="{{ $item->kawasan?->desa?->kecamatan?->nama_kecamatan ?? '' }}"
-                                                                    class="w-full border rounded-lg px-3 py-2" required>
-                                                            </div>
-
-                                                            <div>
-                                                                <label class="block text-sm font-medium">Desa</label>
-                                                                <input type="text" name="nama_desa"
-                                                                   value="{{ $item->kawasan?->desa?->nama_desa ?? '' }}"
-                                                                    class="w-full border rounded-lg px-3 py-2" required>
-                                                            </div>
-
-                                                            <div>
-                                                                <label class="block text-sm font-medium">Nama Kawasan</label>
-                                                                <input type="text" name="nama_kawasan"
-                                                                    value="{{ $item->kawasan?->nama_kawasan ?? '' }}"
-                                                                    class="w-full border rounded-lg px-3 py-2" required>
-                                                            </div>
-
-                                                            <div>
-                                                                <label class="block text-sm font-medium">Nama Lokasi</label>
-                                                                <input type="text" name="nama_lokasi"
-                                                                    value="{{ $item->kawasan?->nama_lokasi ?? '' }}"
-                                                                    class="w-full border rounded-lg px-3 py-2" required>
-                                                            </div>
-
-                                                        </div>
-
-
-                                                        {{-- ================= SHM ================= --}}
-                                                        <h3 class="text-md font-semibold mt-6 mb-3 border-b pb-1">
-                                                            Data SHM
-                                                        </h3>
-
-                                                        <div class="grid grid-cols-3 gap-4">
-                                                            <div>
-                                                                <label class="block text-sm font-medium">Pola</label>
-                                                                <input type="text" name="pola"  value="{{ $item->pola }}" class="w-full border rounded-lg" required>
-                                                            </div>
-                                                            <div>
-                                                                <label class="block text-sm font-medium">Target SHM</label>
-                                                                <input type="number" id="target_shm_{{ $item->shm_id }}"
-                                                                    name="target_shm"
-                                                                    value="{{ $item->target_shm }}"
-                                                                    class="w-full border rounded-lg px-3 py-2"
-                                                                    oninput="hitungSisa({{ $item->shm_id }})"
-                                                                    required>
-                                                            </div>
-
-                                                            <div>
-                                                                <label class="block text-sm font-medium">Realisasi SHM</label>
-                                                                <input type="number" id="realisasi_shm_{{ $item->shm_id }}"
-                                                                    name="realisasi_shm"
-                                                                    value="{{ $item->realisasi_shm }}"
-                                                                    class="w-full border rounded-lg px-3 py-2"
-                                                                    oninput="hitungSisa({{ $item->shm_id }})"
-                                                                    required>
-                                                            </div>
-
-                                                            <div>
-                                                                <label class="block text-sm font-medium">Sisa SHM</label>
-                                                                <input type="number" id="sisa_shm_{{ $item->shm_id }}"
-                                                                    name="sisa_shm"
-                                                                    value="{{ $item->sisa_shm }}"
-                                                                    class="w-full border rounded-lg px-3 py-2 bg-gray-100"
-                                                                    readonly>
-                                                            </div>
-                                                            <div>
-                                                                <label class="block text-sm font-medium">Clear SHM</label>
-                                                                <input type="number" name="clear_shm"  value="{{ $item->clear_shm }}" class="w-full border rounded-lg px-3 py-2" required>
-                                                            </div>
-                                                            <div>
-                                                                <label class="block text-sm font-medium">Bermasalah SHM</label>
-                                                                <input type="number" name="bermasalah_shm"  value="{{ $item->bermasalah_shm }}" class="w-full border rounded-lg px-3 py-2" required>
-                                                            </div>
-                                                        </div>
-
-                                                        <div class="space-y-4 mt-4">
-
-                                                            {{-- HEADER --}}
-                                                            <div class="flex justify-between items-center">
-                                                                <label class="text-sm font-medium">
-                                                                    Tahun Patan & Jumlah KK
-                                                                </label>
-
-                                                                <button type="button"
-                                                                    onclick="tambahBarisTahun({{ $item->shm_id }})"
-                                                                    class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs">
-                                                                    + Tambah Tahun
-                                                                </button>
-                                                            </div>
-
-                                                            {{-- WRAPPER --}}
-                                                            <div id="tahun-wrapper-{{ $item->shm_id }}" class="space-y-3">
-
-                                                                @php
-                                                                    $listShm = $item->kawasan->shm;
-                                                                @endphp
-
-                                                                @foreach($listShm as $row)
-                                                                    <div class="grid grid-cols-2 gap-3 tahun-row">
-
-                                                                        {{-- IMPORTANT --}}
-                                                                        <input type="hidden" name="shm_id[]" value="{{ $row->shm_id }}">
-
-                                                                        <div>
-                                                                            <label class="block text-sm mb-1">Tahun Patan</label>
-                                                                            <input type="number"
-                                                                                name="tahun_patan[]"
-                                                                                value="{{ $row->tahun_patan }}"
-                                                                                class="border rounded-lg px-3 py-2 w-full"
-                                                                                required>
-                                                                        </div>
-
-                                                                        <div>
-                                                                            <label class="block text-sm mb-1">Jumlah KK</label>
-                                                                            <input type="number"
-                                                                                name="jumlah_kk[]"
-                                                                                value="{{ $row->jumlah_kk }}"
-                                                                                class="border rounded-lg px-3 py-2 w-full"
-                                                                                required>
-                                                                        </div>
-
-                                                                    </div>
-                                                                @endforeach
-
-                                                            </div>
-
-                                                        </div>
-
-                                                        <div class="grid grid-cols-3 gap-4 mt-4">
-                                                            <div>
-                                                                <label class="text-sm">Status HPL</label>
-                                                                <select name="status_hpl" class="w-full border rounded-lg px-3 py-2" required>
-                                                                    <option value="">Status HPL</option>
-                                                                    <option value="Serah" {{ $item->status_hpl == 'Serah' ? 'selected' : '' }}>Serah</option>
-                                                                    <option value="Belum" {{ $item->status_hpl == 'Belum' ? 'selected' : '' }}>Belum</option>
-                                                                </select>
-                                                            </div>
-                                                            <div>
-                                                                <label class="text-sm">Status UPT</label>
-                                                                <select name="status_upt" class="w-full border rounded-lg px-3 py-2" required>
-                                                                    <option value="">Status UPT</option>
-                                                                    <option value="Serah" {{ $item->status_upt == 'Serah' ? 'selected' : '' }}>Serah</option>
-                                                                    <option value="Bina" {{ $item->status_upt == 'Bina' ? 'selected' : '' }}>Bina</option>
-                                                                </select>
-                                                            </div>
-                                                            <div>
-                                                                <label class="text-sm">Luas</label>
-                                                                <input type="number" name="luas" placeholder="Luas" value="{{ $item->luas }}"
-                                                                    class="w-full border rounded-lg px-3 py-2" required>
-                                                            </div>
-
-                                                        </div>
-
-                                                        <div class="grid grid-cols-2 gap-4 mt-4">
-                                                            <div>
-                                                                <label class="text-sm">Target Tahunan</label>
-                                                                {{-- Target Tahunan --}}
-                                                                <select name="target_tahunan"
-                                                                    class="w-full border rounded-lg px-3 py-2">
-
-                                                                    <option value="">-- Target Tahun --</option>
-
-                                                                    @for ($year = 1999; $year <= date('Y'); $year++)
-                                                                        <option value="{{ $year }}"
-                                                                            {{ $item->target_tahunan == $year ? 'selected' : '' }}>
-                                                                            {{ $year }}
-                                                                        </option>
-                                                                    @endfor
-
-                                                                </select>
-                                                            </div>
-                                                            <div>
-                                                                <label class="text-sm">Bidang</label>
-                                                                {{-- Bidang --}}
-                                                                <input type="number" name="bidang" placeholder="Bidang" value="{{ $item->bidang }}"
-                                                                    class="w-full border rounded-lg px-3 py-2" required>
-                                                            </div>
-
-                                                        </div>
-
-                                                        <div class="grid grid-cols-2 gap-4 mt-4">
-                                                            <div>
-                                                                <label class="text-sm font-medium">Tipologi</label>
-
-                                                                <select name="nama_tipologi"
-                                                                    class="w-full border rounded-lg px-3 py-2">
-
-                                                                    <option value="">-- Pilih Tipologi --</option>
-
-                                                                    @foreach($jenisPermasalahan as $jp)
-                                                                        <option value="{{ $jp->nama_permasalahan }}"
-                                                                            {{ $item->nama_tipologi == $jp->nama_permasalahan ? 'selected' : '' }}>
-                                                                            {{ $jp->nama_permasalahan }}
-                                                                        </option>
-                                                                    @endforeach
-
-                                                                </select>
-                                                            </div>
-                                                            <div>
-                                                                <label class="text-sm">Bidang</label>
-                                                                {{-- Bidang --}}
-                                                                <input type="number" name="tipologi_bidang" placeholder="Tipologi Bidang" value="{{ $item->tipologi_bidang }}"
-                                                                    class="w-full border rounded-lg px-3 py-2" required>
-                                                            </div>
-
-                                                        </div>
-
-                                                        {{-- Deskripsi --}}
-                                                        <div class="mt-4">
-                                                            <label class="text-sm">Deskripsi</label>
-                                                            <textarea name="deskripsi" rows="2"
-                                                                placeholder="Deskripsi / keterangan"
-                                                                class="w-full border rounded-lg px-3 py-2">{{ $item->deskripsi }}</textarea>
-                                                        </div>
-                                                        {{-- ================= BUTTON ================= --}}
-                                                        <div class="flex justify-end space-x-3 mt-6">
-                                                            <button type="button" data-modal-hide="edit-modal-{{ $item->shm_id }}"
-                                                                class="px-4 py-2 bg-gray-300 rounded-lg">
-                                                                Batal
-                                                            </button>
-                                                            <button type="submit"
-                                                                class="px-4 py-2 bg-slate-800 text-white rounded-lg">
-                                                                Simpan
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    
                                     <div id="delete-modal-{{ $item->shm_id }}" tabindex="-1"
                                         class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
 
@@ -787,7 +561,7 @@
                                             <p class="text-sm text-gray-600 mb-6">
                                                 Data SHM
                                                 <span class="font-semibold text-gray-800">
-                                                    {{ $item->kawasan?->nama_kawasan ?? 'Tanpa Kawasan' }}
+                                                    {{ $item->kawasan?->nama_kawasan }}
                                                 </span>
                                                 akan dihapus secara permanen.
                                             </p>
@@ -821,245 +595,404 @@
                                 @endforelse
                             </tbody>
                         </table>
+                        <div class="mt-4">
+                            {{ $shm->links() }}
+                        </div>
+                        
+                        <div id="edit-modal-{{ $item->shm_id }}"
+                            class="fixed inset-0 z-50 hidden bg-black/50 flex items-start justify-center overflow-y-auto p-4">
+
+                            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
+
+                                <form action="{{ route('updateShm', $item->shm_id) }}" method="POST" class="flex flex-col max-h-[85vh]">
+                                    @csrf
+                                    @method('PUT')
+
+                                    <!-- HEADER -->
+                                    <div class="bg-blue-600 px-8 py-6 text-white rounded-t-3xl">
+                                        <h3 class="text-xl font-black uppercase tracking-tight">
+                                            Edit Data SHM
+                                        </h3>
+                                    </div>
+
+                                    <!-- CONTENT -->
+                                    <div class="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+
+                                        <!-- WILAYAH -->
+                                        <div class="border border-gray-200 rounded-2xl p-6 bg-white">
+                                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                                                Data Wilayah
+                                            </h4>
+
+                                            <div class="grid md:grid-cols-2 gap-5">
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Kecamatan</label>
+                                                    <input type="text" name="nama_kecamatan"
+                                                        value="{{ $item->kawasan?->desa?->kecamatan?->nama_kecamatan }}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Kawasan</label>
+                                                    <input type="text" name="nama_kawasan" value="{{ $item->kawasan?->nama_kawasan }}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Desa</label>
+                                                    <input type="text" name="nama_desa"
+                                                        value="{{ $item->kawasan?->desa?->nama_desa }}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Lokasi</label>
+                                                    <input type="text" name="nama_lokasi" value="{{ $item->kawasan?->nama_lokasi }}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- SHM -->
+                                        <div class="border border-gray-200 rounded-2xl p-6 bg-white">
+                                            <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                                                Data Sertifikat Hak Milik
+                                            </h4>
+
+                                            <div class="grid md:grid-cols-3 gap-5">
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Pola</label>
+                                                    <input type="text" name="pola" value="{{ $item->pola }}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Target SHM</label>
+                                                    <input type="number" id="target_{{ $item->shm_id }}"
+                                                        name="target_shm" value="{{ $item->target_shm }}"
+                                                        oninput="hitungSisa({{ $item->shm_id }})" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Realisasi SHM</label>
+                                                    <input type="number" id="realisasi_{{ $item->shm_id }}"
+                                                        name="realisasi_shm" value="{{ $item->realisasi_shm }}"
+                                                        oninput="hitungSisa({{ $item->shm_id }})" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Sisa SHM</label>
+                                                    <input type="number" id="sisa_{{ $item->shm_id }}"
+                                                        name="sisa_shm" value="{{ $item->sisa_shm }}"
+                                                        class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" readonly>
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Clear SHM</label>
+                                                    <input type="number" name="clear_shm" value="{{ $item->clear_shm }}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Bermasalah SHM</label>
+                                                    <input type="number" name="bermasalah_shm" value="{{ $item->bermasalah_shm }}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- TAHUN PATAN -->
+                                        <div class="border border-gray-200 rounded-2xl p-6 bg-white">
+                                            @php 
+                                                $shmList = $item->kawasan?->shm ?? collect();
+                                                $startIndex = $shmList->count();
+                                            @endphp
+                                            <div class="flex justify-between items-center mb-4">
+                                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                                    Tahun Patan & Jumlah KK 
+                                                </h4>
+
+                                                <button type="button"
+                                                    onclick="tambahBarisTahun({{ $item->shm_id }})"
+                                                    class="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs hover:bg-green-700">
+                                                    + Tambah
+                                                </button>
+                                            </div>
+
+                                            <div id="tahun-wrapper-{{ $item->shm_id }}" class="space-y-3">
+                                                @foreach($shmList as $i => $row)
+                                                <div class="grid grid-cols-2 gap-4">
+                                                    <input type="hidden" name="rows[{{ $i }}][shm_id]" value="{{ $row->shm_id }}">
+
+                                                    <input type="number" name="rows[{{ $i }}][tahun_patan]" value="{{ $row->tahun_patan }}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+
+                                                    <input type="number" name="rows[{{ $i }}][jumlah_kk]" value="{{ $row->jumlah_kk }}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                                </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+
+                                        <div class="grid md:grid-cols-2 gap-5">
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Target Tahunan</label>
+                                                <input type="number" name="target_tahunan"
+                                                    value="{{ $item->target_tahunan }}"
+                                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Bidang</label>
+                                                <input type="number" name="bidang"
+                                                    value="{{ $item->bidang }}"
+                                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                            </div>
+                                        </div>
+                                        <!-- STATUS -->
+                                        <div class="grid md:grid-cols-3 gap-5">
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Status HPL</label>
+                                                <select name="status_hpl" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                                    <option value="Serah" {{ $item->status_hpl == 'Serah' ? 'selected' : '' }}>Serah</option>
+                                                    <option value="Belum" {{ $item->status_hpl == 'Belum' ? 'selected' : '' }}>Belum</option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Status UPT</label>
+                                                <select name="status_upt" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                                    <option value="Serah" {{ $item->status_upt == 'Serah' ? 'selected' : '' }}>Serah</option>
+                                                    <option value="Bina" {{ $item->status_upt == 'Bina' ? 'selected' : '' }}>Bina</option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Luas</label>
+                                                <input type="number" name="luas" value="{{ $item->luas }}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Deskripsi</label>
+                                            <textarea name="deskripsi" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">{{ $item->deskripsi }}</textarea>
+                                        </div>
+                                    </div>
+
+                                    <!-- FOOTER -->
+                                    <div class="p-4 border-t flex justify-end gap-3 bg-gray-50 rounded-b-3xl">
+                                        <button type="button"
+                                            data-modal-hide="edit-modal-{{ $item->shm_id }}"
+                                            class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">
+                                            Batal
+                                        </button>
+
+                                        <button type="submit"
+                                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                            Simpan
+                                        </button>
+                                    </div>
+
+                                </form>
+                            </div>
+                        </div>
+                       
+                    </div>
+                    <div class="px-6 py-4 bg-white border-t">
+                        {{ $shm->links() }}
                     </div>
                 </div>
             </div>
         </div>
     </div>
     <div id="tambah-modal" tabindex="-1"
-        class="fixed inset-0 z-50 hidden bg-black/50 flex items-start justify-center overflow-y-auto">
+        class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
 
-        <div class="relative mx-auto mt-10 mb-10 w-[90%] max-w-3xl">
-            <div class="bg-white rounded-xl shadow-xl p-6 max-h-[85vh] overflow-y-auto">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
 
-                <h3 class="text-lg font-bold mb-4">Tambah Data SHM</h3>
-
-                @if ($errors->any())
-                    <div class="p-3 mb-4 text-red-700 bg-red-100 rounded">
-                        <ul class="list-disc list-inside">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-
-                <form action="{{ route('storeShm') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-
-                    <div class="border border-gray-200 rounded-lg p-4 mb-6">
-
-                        <h3 class="text-md font-semibold mb-3">Data Wilayah</h3>
-
-                        <div class="grid grid-cols-2 gap-4">
-
-                            <div>
-                                <label class="text-sm">Provinsi</label>
-                                <select name="provinsi_id" id="provinsi"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                                    <option value="">-- Pilih Provinsi --</option>
-                                    @foreach ($provinsi as $item)
-                                        <option value="{{ $item->id }}">{{ $item->nama_provinsi }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="text-sm">Kabupaten</label>
-                                <select name="kabupaten_id" id="kabupaten"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                                    <option value="">-- Pilih Kabupaten --</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="text-sm">Kecamatan</label>
-                                <input type="text" name="nama_kecamatan"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                            </div>
-
-                            <div>
-                                <label class="text-sm">Desa</label>
-                                <input type="text" name="nama_desa"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                            </div>
-
-                            <div>
-                                <label class="text-sm">Nama Kawasan</label>
-                                <input type="text" name="nama_kawasan" id="nama_kawasan"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                            </div>
-
-                            <div>
-                                <label class="text-sm">Nama Lokasi</label>
-                                <input type="text" name="nama_lokasi"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                            </div>
-                        </div>
-
-                        {{-- SHM --}}
-                        <h3 class="text-md font-semibold mt-6 mb-3 border-b pb-1">Data SHM</h3>
-
-                        <div class="grid grid-cols-4 gap-4">
-                            <div>
-                                <label class="text-sm">Pola</label>
-                                <input type="text" name="pola" placeholder="Pola"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                            </div>
-
-                            <div>
-                                <label class="text-sm">Tahun Patan</label>
-                                <input type="number" name="tahun_patan" placeholder="Tahun Patan"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                            </div>
-                            <div>
-                                <label class="text-sm">Jumlah KK</label>
-                                <input type="number" name="jumlah_kk" placeholder="Jumlah KK"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                            </div>
-                            <div>
-                                <label class="text-sm">Target SHM</label>
-                                <input type="number" name="target_shm" placeholder="Target SHM" id="target_shm"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                            </div>
-                            <div>
-                                <label class="text-sm">Realisasi SHM</label>
-                                <input type="number" name="realisasi_shm" placeholder="Realisasi SHM" id="realisasi_shm"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                            </div>
-                            <div>
-                                <label class="text-sm">Sisa SHM</label>
-                                <input type="number" name="sisa_shm" placeholder="Sisa SHM" id="sisa_shm"
-                                    class="w-full border rounded-lg px-3 py-2" readonly>
-                            </div>
-                            <div>
-                                <label class="text-sm">Clear SHM</label>
-                                <input type="number" name="clear_shm" placeholder="Clear SHM"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                            </div>
-                            <div>
-                                <label class="text-sm">Bermasalah SHM</label>
-                                <input type="number" name="bermasalah_shm" placeholder="Bermasalah SHM"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-3 gap-4 mt-4">
-                            <div>
-                                <label class="text-sm">Status HPL</label>
-                                <select name="status_hpl"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                                    <option value="">Status HPL</option>
-                                    <option value="Serah">Serah</option>
-                                    <option value="Belum">Belum</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-sm">Status UPT</label>
-                                <select name="status_upt"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                                    <option value="">Status UPT</option>
-                                    <option value="Serah">Serah</option>
-                                    <option value="Bina">Bina</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-sm">Luas</label>
-                                <input type="number" name="luas" placeholder="Luas"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                            </div>
-
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4 mt-4">
-                            <div>
-                                <label class="text-sm">Target Tahunan</label>
-                                {{-- Target Tahunan --}}
-                                <select name="target_tahunan"
-                                    class="w-full border rounded-lg px-3 py-2">
-    
-                                    <option value="">-- Target Tahun --</option>
-    
-                                    @for ($year = 2025; $year <= date('Y') + 5; $year++)
-                                        <option value="{{ $year }}">{{ $year }}</option>
-                                    @endfor
-    
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-sm">Bidang</label>
-                                {{-- Bidang --}}
-                                <input type="number" name="bidang" placeholder="Bidang"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                            </div>
-
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4 mt-4">
-                            <div>
-                                <label class="text-sm font-medium">Tipologi</label>
-
-                                <select id="tipologi_select" name="tipologi"
-                                    class="w-full border rounded-lg px-3 py-2">
-
-                                    <option value="">-- Pilih Tipologi --</option>
-
-                                    @foreach($jenisPermasalahan as $jp)
-                                        <option value="{{ $jp->nama_permasalahan }}">
-                                            {{ $jp->nama_permasalahan}}
-                                        </option>
-                                    @endforeach
-
-                                    <option value="lainnya">Lainnya...</option>
-                                </select>
-
-                                {{-- input manual --}}
-                                <input type="text"
-                                    id="tipologi_manual"
-                                    name="tipologi_manual"
-                                    placeholder="Ketik tipologi lain..."
-                                    class="w-full border rounded-lg px-3 py-2 mt-2 hidden">
-                            </div>
-                            <div>
-                                <label class="text-sm">Bidang</label>
-                                {{-- Bidang --}}
-                                <input type="number" name="tipologi_bidang" placeholder="Tipologi Bidang"
-                                    class="w-full border rounded-lg px-3 py-2" required>
-                            </div>
-
-                        </div>
-
-                        {{-- Deskripsi --}}
-                        <div class="mt-4">
-                            <label class="text-sm">Deskripsi</label>
-                            <textarea name="deskripsi" rows="2"
-                                placeholder="Deskripsi / keterangan"
-                                class="w-full border rounded-lg px-3 py-2"></textarea>
-                        </div>
-
-                        {{-- DOKUMEN --}}
-                        <h3 class="text-md font-semibold mt-6 mb-3 border-b pb-1">Dokumen SHM</h3>
-
-                        <input type="file" name="dokumen[]" multiple
-                            class="w-full border rounded-lg px-3 py-2"
-                            accept=".pdf,.jpg,.jpeg,.png">
-
-                        {{-- BUTTON --}}
-                        <div class="flex justify-end gap-3 mt-6">
-                            <button type="button" data-modal-hide="tambah-modal"
-                                class="px-4 py-2 bg-gray-300 rounded-lg">
-                                Batal
-                            </button>
-
-                            <button type="submit"
-                                class="px-4 py-2 bg-slate-800 text-white rounded-lg">
-                                Simpan
-                            </button>
-                        </div>
-
-                    </div>
-                </form>
+            <!-- HEADER -->
+            <div class="bg-blue-600 px-8 py-6 text-white flex justify-between items-center">
+                <h3 class="text-xl font-black uppercase tracking-tight">
+                    Input Data Sertifikat Hak Milik
+                </h3>
             </div>
+
+            <form action="{{ route('storeShm') }}" method="POST" enctype="multipart/form-data" class="flex flex-col overflow-hidden">
+            @csrf
+
+            <div class="p-8 overflow-y-auto space-y-8 bg-white">
+
+                <!-- ================= WILAYAH ================= -->
+                <div>
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                        Informasi Wilayah
+                    </h4>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Provinsi</label>
+                            <select name="provinsi_id" id="provinsi" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold" required>
+                                <option value="">-- Provinsi --</option>
+                                @foreach ($provinsi as $item)
+                                    <option value="{{ $item->id }}">{{ $item->nama_provinsi }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Kabupaten</label>
+                            <select name="kabupaten_id" id="kabupaten" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold" required>
+                                <option value="">-- Kabupaten --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Kecamatan</label>
+                            <input type="text" name="nama_kecamatan" placeholder="Nama Kecamatan" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Desa</label>
+                            <input type="text" name="nama_desa" placeholder="Nama Desa" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Kawasan</label>
+                            <input type="text" name="nama_kawasan" placeholder="Nama Kawasan" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Lokasi</label>
+                            <input type="text" name="nama_lokasi" placeholder="Nama Lokasi" class="w-full border-slate-200 rounded-xl py-3 px-4 focus:ring-blue-500 shadow-sm font-semibold" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= DATA SHM ================= -->
+                <div class="pt-6 border-t border-slate-100">
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2"><span class="w-8 h-px bg-slate-200"></span> Detail Berkas SHM</h4>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Pola</label>
+                            <input type="text" name="pola" placeholder="Pola" class="w-full border-slate-200 rounded-xl py-3 px-4 font-semibold shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Tahun Patan</label>
+                            <input type="number" name="tahun_patan" placeholder="Tahun Patan" class="w-full border-slate-200 rounded-xl py-3 px-4 font-semibold shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Jumlah KK</label>
+                            <input type="number" name="jumlah_kk" placeholder="Jumlah KK" class="w-full border-slate-200 rounded-xl py-3 px-4 font-semibold shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Target SHM</label>
+                            <input type="number" name="target_shm" id="target_shm" placeholder="Target SHM" class="w-full border-slate-200 rounded-xl py-3 px-4 font-semibold shadow-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mt-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Realisasi SHM</label>
+                            <input type="number" name="realisasi_shm" id="realisasi_shm" placeholder="Realisasi SHM" class="w-full border-slate-200 rounded-xl py-3 px-4 font-semibold shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Sisa SHM</label>
+                            <input type="number" name="sisa_shm" id="sisa_shm" placeholder="Sisa SHM" class="bg-gray-100 w-full border-slate-200 rounded-xl py-3 px-4 font-semibold shadow-sm"disabled>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Clear SHM</label>
+                            <input type="number" name="clear_shm" placeholder="Clear SHM" class="w-full border-slate-200 rounded-xl py-3 px-4 font-semibold shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Bermasalah SHM</label>
+                            <input type="number" name="bermasalah_shm" placeholder="Bermasalah SHM" class="w-full border-slate-200 rounded-xl py-3 px-4 font-semibold shadow-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Status HPL</label>
+                            <select name="status_hpl" class="w-full border-slate-200 rounded-xl py-3 px-4 font-black text-blue-700" >
+                                <option value="">Status HPL</option>
+                                <option value="Serah">Serah</option>
+                                <option value="Belum">Belum</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Status UPT</label>
+                            <select name="status_upt" class="w-full border-slate-200 rounded-xl py-3 px-4 font-black text-blue-700" >
+                                <option value="">Status UPT</option>
+                                <option value="Serah">Serah</option>
+                                <option value="Bina">Bina</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Luas</label>
+                            <input type="number" name="luas" placeholder="Luas" class="w-full border-slate-200 rounded-xl py-3 px-4 font-semibold shadow-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TARGET & TIPOLOGI ================= -->
+                <div class="pt-6 border-t">
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2"><span class="w-8 h-px bg-slate-200"></span>Target & Tipologi</h4>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Target Tahunan</label>
+                            <select name="target_tahunan" class="w-full border-slate-200 rounded-xl py-3 px-4 font-semibold shadow-sm">
+                                <option value="">Target Tahun</option>
+                                @for ($year = 2025; $year <= date('Y') + 5; $year++)
+                                    <option value="{{ $year }}">{{ $year }}</option>
+                                @endfor
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Bidang</label>
+                            <input type="number" name="bidang" placeholder="Bidang" class="w-full border-slate-200 rounded-xl py-3 px-4 font-semibold shadow-sm">
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Tipologi</label>
+                            <select id="tipologi_select" name="tipologi" class="w-full border-slate-200 rounded-xl py-3 px-4 font-semibold shadow-sm">
+                                <option value="">-- Tipologi --</option>
+                                @foreach($jenisPermasalahan as $jp)
+                                    <option value="{{ $jp->nama_permasalahan }}">{{ $jp->nama_permasalahan }}</option>
+                                @endforeach
+                                <option value="lainnya">Lainnya...</option>
+                            </select>
+                            <input type="text" id="tipologi_manual" name="tipologi_manual"
+                                placeholder="Tipologi lainnya..." class="input hidden">
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Bidang</label>
+                            <input type="number" name="tipologi_bidang" placeholder="Bidang Tipologi" class="w-full border-slate-200 rounded-xl py-3 px-4 font-semibold shadow-sm">
+                        </div>
+                    </div>
+                    
+                    <div class="pt-6 border-t">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Deskripsi</label>
+                        <textarea name="deskripsi" rows="2"
+                            placeholder="Deskripsi"
+                            class="w-full border-slate-200 rounded-xl py-3 px-4 font-semibold shadow-sm"></textarea>
+                    </div>
+                </div>
+
+                <!-- ================= DOKUMEN ================= -->
+                <div class="pt-6 border-t">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Dokumen</label>
+                    <input type="file" name="dokumen[]" multiple
+                        class="w-full text-xs file:bg-blue-600 file:text-white file:px-4 file:py-2 file:rounded-lg">
+                </div>
+
+            </div>
+
+            <!-- FOOTER -->
+            <div class="p-6 bg-slate-50 flex justify-end gap-3">
+                <button type="button" data-modal-hide="tambah-modal"
+                    class="px-6 py-2 bg-gray-200 rounded-xl">
+                    Batal
+                </button>
+
+                <button type="submit"
+                    class="px-6 py-2 bg-blue-600 text-white rounded-xl shadow">
+                    Simpan
+                </button>
+            </div>
+
+            </form>
         </div>
     </div>
 
@@ -1174,65 +1107,52 @@
             }
         });
 
-        document.addEventListener('DOMContentLoaded', function () {
-            const targetInput = document.getElementById('target_shm');
-            const realisasiInput = document.getElementById('realisasi_shm');
-            const sisaInput = document.getElementById('sisa_shm');
-
-            // guard biar tidak null
-            if (!targetInput || !realisasiInput || !sisaInput) return;
-
-            function hitungSisa() {
-                const target = parseInt(targetInput.value) || 0;
-                const realisasi = parseInt(realisasiInput.value) || 0;
-
-                let sisa = target - realisasi;
-                if (sisa < 0) sisa = 0;
-
-                sisaInput.value = sisa;
-            }
-
-            targetInput.addEventListener('input', hitungSisa);
-            realisasiInput.addEventListener('input', hitungSisa);
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function () {
+                console.log('FORM SUBMIT:', this);
+                console.log([...this.querySelectorAll('[name^="rows"]')]);
+            });
         });
 
+        let rowIndexMap = {};
+
         function tambahBarisTahun(id) {
-            let wrapper = document.getElementById('tahun-wrapper-' + id);
+            const modal = document.getElementById('edit-modal-' + id);
+            const form = modal.querySelector('form');
+            const wrapper = form.querySelector('#tahun-wrapper-' + id);
 
-            let html = `
-                <div class="grid grid-cols-2 gap-3 tahun-row">
+            const index = wrapper.querySelectorAll('[name^="rows"]').length / 2;
 
-                    <input type="hidden" name="shm_id[]" value="">
+            const html = `
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number"
+                        name="rows[${Math.floor(index)}][tahun_patan]"
+                        placeholder="Tahun Patan"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
 
-                    <div>
-                        <label class="block text-sm mb-1">Tahun Patan</label>
-                        <input type="number"
-                            name="tahun_patan[]"
-                            class="border rounded-lg px-3 py-2 w-full"
-                            required>
-                    </div>
+                    <input type="number"
+                        name="rows[${Math.floor(index)}][jumlah_kk]"
+                        placeholder="Jumlah KK"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
 
-                    <div>
-                        <label class="block text-sm mb-1">Jumlah KK</label>
-                        <input type="number"
-                            name="jumlah_kk[]"
-                            class="border rounded-lg px-3 py-2 w-full"
-                            required>
-                    </div>
-
+                    <button type="button" onclick="hapusRow(this)"
+                        class="text-red-500 text-xs">Hapus</button>
                 </div>
             `;
 
             wrapper.insertAdjacentHTML('beforeend', html);
         }
 
-        function hitungSisa(id) {
-            const target = parseInt(document.getElementById('target_shm_' + id)?.value) || 0;
-            const realisasi = parseInt(document.getElementById('realisasi_shm_' + id)?.value) || 0;
+        function hapusRow(btn) {
+            btn.parentElement.remove();
+        }
 
-            const sisa = Math.max(target - realisasi, 0);
-
-            document.getElementById('sisa_shm_' + id).value = sisa;
+        function openEditModal(id) {
+            const modal = document.getElementById('edit-modal-' + id);
+            if (modal) {
+                modal.classList.remove('hidden');
+                hitungSisa(id); // 🔥 langsung hitung saat buka
+            }
         }
 
         function toggleTipologiManual(id) {
@@ -1248,9 +1168,50 @@
                 input.value = '';
             }
         }
+        document.addEventListener('input', function (e) {
+            const targetEl = document.getElementById('target_shm');
+            const realisasiEl = document.getElementById('realisasi_shm');
+            const sisaEl = document.getElementById('sisa_shm');
+
+            if (!targetEl || !realisasiEl || !sisaEl) return;
+
+            const target = parseInt(targetEl.value) || 0;
+            const realisasi = parseInt(realisasiEl.value) || 0;
+
+            let sisa = target - realisasi;
+            if (sisa < 0) sisa = 0;
+
+            sisaEl.value = sisa;
+        });
+
+        function hitungSisa(id) {
+            const targetEl = document.getElementById('target_' + id);
+            const realisasiEl = document.getElementById('realisasi_' + id);
+            const sisaEl = document.getElementById('sisa_' + id);
+
+            if (!targetEl || !realisasiEl || !sisaEl) return;
+
+            const target = parseInt(targetEl.value) || 0;
+            const realisasi = parseInt(realisasiEl.value) || 0;
+
+            let sisa = target - realisasi;
+            if (sisa < 0) sisa = 0;
+
+            sisaEl.value = sisa;
+        }
     </script>
     <script src="https://unpkg.com/flowbite@1.6.5/dist/flowbite.min.js"></script>
+    <style>
+        .input {
+            @apply w-full border border-gray-300 rounded-lg px-3 py-2 text-sm 
+                focus:ring-2 focus:ring-blue-500 focus:outline-none;
+        }
 
+        .label {
+            @apply block text-xs font-medium text-gray-600 mb-1;
+        }
+    
+    </style>
 </body>
 
 </html>

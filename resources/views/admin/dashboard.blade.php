@@ -181,11 +181,11 @@
                         Ringkasan status legalitas Hak Pengelolaan 
                     </p>
                 </div>
-                <span id="icon-sectionHPL" class="text-xl transition-transform">▼</span>
+                <span id="icon-sectionHPL"  class="text-xl transition-transform rotate-180 inline-block">▼</span>
             </button>
 
             <!-- CONTENT (yang di-toggle) -->
-            <div id="sectionHPL" class="px-6 pb-6 hidden">
+            <div id="sectionHPL" class="px-6 pb-6">
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -251,80 +251,190 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            if (typeof Highcharts === 'undefined') return;
 
-            // Format DataLabels Pie yang 100% AMAN dari Bug (Nama: 00.0%)
-            const safePieDataLabels = {
-                enabled: true,
-                format: '<b>{point.name}</b>: {point.percentage:.1f} %',
-                style: {
-                    fontSize: '13px'
-                }
-            };
+            // ================= PIE SHM =================
+            Highcharts.chart('pie_chart', {
 
-            // 1. Grafik Pie SHM
-            try {
-                Highcharts.chart('pie_chart', {
-                    chart: { type: 'pie' },
-                    title: { text: 'Capaian Sertipikasi Tanah Transmigrasi' },
-                    plotOptions: { 
-                        pie: { size: '80%', allowPointSelect: true, cursor: 'pointer', dataLabels: safePieDataLabels } 
-                    },
-                    series: [{ name: 'SHM', colorByPoint: true, data: {!! json_encode($pie) !!} }]
-                });
-            } catch(e) { console.error("Error Grafik Pie SHM:", e); }
+                chart: {
+                    type: 'pie'
+                },
 
-            // 2. Grafik Kolom Tahunan
-            try {
-                Highcharts.chart('chart_bidang_tahunan', {
-                    chart: { type: 'column' },
-                    title: { text: null },
-                    xAxis: { categories: {!! json_encode($tahunList) !!}, title: { text: 'Tahun' } },
-                    yAxis: { title: { text: 'Total Bidang' } },
-                    tooltip: { pointFormat: '<b>{point.y} bidang</b>' },
-                    series: [{ name: 'Bidang', data: {!! json_encode($dataBidang) !!} }],
-                    credits: { enabled: false }
-                });
-            } catch(e) { console.error("Error Grafik Tahunan:", e); }
+                title: {
+                    text: 'Rekap Status SHM'
+                },
 
-            // 3. Grafik Pie Status HPL
-            try {
-                Highcharts.chart('pie_status_hpl', {
-                    chart: { type: 'pie' },
-                    title: { text: 'Status Hak Pengelolaan' },
-                    plotOptions: { 
-                        pie: { allowPointSelect: true, cursor: 'pointer', dataLabels: safePieDataLabels } 
-                    },
-                    series: [{ name: 'Jumlah Kawasan', colorByPoint: true, data: {!! json_encode($pieStatusHpl) !!} }]
-                });
-            } catch(e) { console.error("Error Grafik Status HPL:", e); }
+                tooltip: {
+                    pointFormat: '<b>{point.y}</b> bidang ({point.percentage:.1f}%)'
+                },
 
-            // 4. Grafik Pie Peta HPL
-            try {
-                Highcharts.chart('pie_peta_hpl', {
-                    chart: { type: 'pie' },
-                    title: { text: 'Ketersediaan Peta Kawasan' },
-                    plotOptions: { 
-                        pie: { allowPointSelect: true, cursor: 'pointer', dataLabels: safePieDataLabels } 
-                    },
-                    series: [{ name: 'Jumlah Kawasan', colorByPoint: true, data: {!! json_encode($piePetaHpl) !!} }],
-                    credits: { enabled: false }
-                });
-            } catch(e) { console.error("Error Grafik Peta HPL:", e); }
+                accessibility: {
+                    point: {
+                        valueSuffix: '%'
+                    }
+                },
 
-            // 5. Grafik Pie Permasalahan
-            try {
-                Highcharts.chart('pie_permasalahan_lahan', {
-                    chart: { type: 'pie' },
-                    title: { text: 'Distribusi Jenis Permasalahan' },
-                    tooltip: { pointFormat: '<b>{point.percentage:.1f}%</b><br>Total: {point.y}' },
-                    plotOptions: { 
-                        pie: { size: '80%', allowPointSelect: true, cursor: 'pointer', dataLabels: safePieDataLabels } 
-                    },
-                    series: [{ name: 'Total', colorByPoint: true, data: {!! json_encode($pieJenisPermasalahan) !!} }]
-                });
-            } catch(e) { console.error("Error Grafik Permasalahan:", e); }
+                plotOptions: {
+                    pie: {
+                        allowPointSelect: true,
+                        cursor: 'pointer',
+
+                        dataLabels: {
+                            enabled: true,
+                            format: '<b>{point.name}</b><br>{point.y}'
+                        }
+                    }
+                },
+
+                series: [{
+                    name: 'Jumlah',
+                    colorByPoint: true,
+                    data: @json($pie)
+                }]
+            });
+
+
+            // ================= BAR TAHUNAN SHM =================
+            Highcharts.chart('chart_bidang_tahunan', {
+
+                chart: {
+                    type: 'column'
+                },
+
+                title: {
+                    text: 'Target Tahunan Bidang SHM'
+                },
+
+                xAxis: {
+                    categories: @json($tahunList),
+                    title: {
+                        text: 'Tahun'
+                    }
+                },
+
+                yAxis: {
+                    min: 0,
+                    title: {
+                        text: 'Jumlah Bidang'
+                    }
+                },
+
+                tooltip: {
+                    pointFormat: '<b>{point.y}</b> bidang'
+                },
+
+                series: [{
+                    name: 'Bidang',
+                    data: @json($dataBidang)
+                }]
+            });
+
+
+            // ================= PIE PERMASALAHAN =================
+            Highcharts.chart('pie_permasalahan_lahan', {
+
+                chart: {
+                    type: 'pie'
+                },
+
+                title: {
+                    text: 'Jenis Permasalahan Lahan'
+                },
+
+                tooltip: {
+                    pointFormat: '<b>{point.y}</b> bidang ({point.percentage:.1f}%)'
+                },
+
+                plotOptions: {
+                    pie: {
+                        allowPointSelect: true,
+                        cursor: 'pointer',
+
+                        dataLabels: {
+                            enabled: true,
+                            format: '<b>{point.name}</b><br>{point.y}'
+                        }
+                    }
+                },
+
+                series: [{
+                    name: 'Jumlah',
+                    colorByPoint: true,
+                    data: @json($pieJenisPermasalahan)
+                }]
+            });
+
         });
+
+        Highcharts.chart('pie_status_hpl', {
+
+            chart: {
+                type: 'pie'
+            },
+
+            title: {
+                text: 'Jenis Dokumen HPL'
+            },
+
+            tooltip: {
+                pointFormat:
+                    '<b>{point.y}</b> dokumen ({point.percentage:.1f}%)'
+            },
+
+            plotOptions: {
+                pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+
+                    dataLabels: {
+                        enabled: true,
+                        format: '<b>{point.name}</b><br>{point.y}'
+                    }
+                }
+            },
+
+            series: [{
+                name: 'Jumlah',
+                colorByPoint: true,
+                data: @json($pieStatusHpl)
+            }]
+        });
+
+
+
+        Highcharts.chart('pie_peta_hpl', {
+
+            chart: {
+                type: 'pie'
+            },
+
+            title: {
+                text: 'Ketersediaan Peta HPL'
+            },
+
+            tooltip: {
+                pointFormat:
+                    '<b>{point.y}</b> lokasi ({point.percentage:.1f}%)'
+            },
+
+            plotOptions: {
+                pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+
+                    dataLabels: {
+                        enabled: true,
+                        format: '<b>{point.name}</b><br>{point.y}'
+                    }
+                }
+            },
+
+            series: [{
+                name: 'Jumlah',
+                colorByPoint: true,
+                data: @json($piePetaHpl)
+            }]
+        });
+        
     </script>
     
 </body>
